@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     const prompt = `
     あなたは不動産のプロです。以下の見積書を解析し、JSON形式でのみ出力してください。
-    Markdown記法（\`\`\`jsonなど）は含めず、純粋なJSON文字列だけを返してください。
+    Markdown記法は含めず、純粋なJSON文字列だけを返してください。
 
     【出力JSONの構造】
     {
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           "name": "項目名",
           "price_original": 数値(円),
           "price_fair": 適正価格(円),
-          "status": "fair(適正)|negotiable(交渉可)|cut(削除推奨)",
+          "status": "fair|negotiable|cut",
           "reason": "短い理由",
           "is_insurance": true/false
         }
@@ -54,17 +54,14 @@ export async function POST(req: Request) {
     `;
     parts.push({ text: prompt });
 
-    // ★一旦、確実に動く "gemini-1.5-flash" にします
+    // ★ここを「gemini-1.5-flash」にします。これが現在最も確実です。
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
 
-    console.log("AI解析開始...");
     const result = await model.generateContent(parts);
     const responseText = result.response.text();
-    console.log("解析完了");
-
     const json = JSON.parse(responseText);
     return NextResponse.json({ result: json });
 
