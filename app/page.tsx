@@ -677,34 +677,53 @@ export default function Home() {
                   href={process.env.NEXT_PUBLIC_LINE_URL || "https://line.me/R/ti/p/@your_id"} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="flex-shrink-0 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-bold py-5 px-10 rounded-2xl shadow-2xl shadow-green-300/50 transition-all hover:scale-105 hover:shadow-green-400/60 flex items-center gap-2 text-lg relative overflow-hidden group"
+                  className="flex-shrink-0 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-black py-5 px-10 rounded-2xl shadow-2xl shadow-green-300/50 transition-all hover:scale-105 hover:shadow-green-400/60 flex items-center gap-3 text-lg relative overflow-hidden group"
+                  style={{
+                    boxShadow: '0 10px 30px rgba(6, 199, 85, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                  }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 relative z-10"><path d="M12 2C6.48 2 2 5.56 2 10.1c0 2.45 1.3 4.63 3.4 6.1-.15.8-.5 2.15-.56 2.47-.05.24.1.47.34.47.1 0 .2-.03.27-.08.05-.03 2.6-1.73 3.63-2.45.62.17 1.28.26 1.95.26 5.52 0 10-3.56 10-8.1S17.52 2 12 2z"/></svg>
-                  <span className="relative z-10">詳細を今すぐ確認</span>
+                  {/* 立体的なLINEアイコン */}
+                  <div className="relative z-10 w-8 h-8 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-sm"></div>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 relative z-10 drop-shadow-lg" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
+                      <path d="M12 2C6.48 2 2 5.56 2 10.1c0 2.45 1.3 4.63 3.4 6.1-.15.8-.5 2.15-.56 2.47-.05.24.1.47.34.47.1 0 .2-.03.27-.08.05-.03 2.6-1.73 3.63-2.45.62.17 1.28.26 1.95.26 5.52 0 10-3.56 10-8.1S17.52 2 12 2z"/>
+                    </svg>
+                  </div>
+                  <span className="relative z-10 tracking-wide">詳細を今すぐ確認</span>
                 </a>
              </div>
              <div className="relative z-10 mt-6 pt-6 border-t border-slate-200">
-                <div className="flex flex-wrap gap-3 text-xs justify-center md:justify-start">
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-base">📅</span>
-                    <span className="font-bold">365日対応</span>
+                <div className="flex flex-wrap gap-4 text-sm justify-center md:justify-start">
+                  <div className="flex items-center gap-2 text-slate-800 group">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                      <span className="text-lg" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>📅</span>
+                    </div>
+                    <span className="font-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>365日対応</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-base">🏆</span>
-                    <span className="font-bold">実績800件以上</span>
+                  <div className="flex items-center gap-2 text-slate-800 group">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                      <span className="text-lg" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>🏆</span>
+                    </div>
+                    <span className="font-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>実績800件以上</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-base">📱</span>
-                    <span className="font-bold">来店不要</span>
+                  <div className="flex items-center gap-2 text-slate-800 group">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-green-100 to-green-200 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                      <span className="text-lg" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>📱</span>
+                    </div>
+                    <span className="font-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>来店不要</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-base">💰</span>
-                    <span className="font-bold">仲介手数料最大無料</span>
+                  <div className="flex items-center gap-2 text-slate-800 group">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                      <span className="text-lg" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>💰</span>
+                    </div>
+                    <span className="font-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>仲介手数料最大無料</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-base">✅</span>
-                    <span className="font-bold">不要オプション一切無し</span>
+                  <div className="flex items-center gap-2 text-slate-800 group">
+                    <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg shadow-md group-hover:shadow-lg transition-all">
+                      <span className="text-lg" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>✅</span>
+                    </div>
+                    <span className="font-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>不要オプション一切無し</span>
                   </div>
                 </div>
              </div>
