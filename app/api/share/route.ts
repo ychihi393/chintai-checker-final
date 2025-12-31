@@ -49,26 +49,36 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const shareId = searchParams.get("id");
 
+    console.log("Share GET request - ID:", shareId);
+    console.log("Current storage size:", shareStorage.size);
+    console.log("Storage keys:", Array.from(shareStorage.keys()));
+
     if (!shareId) {
+      console.error("Share GET Error: No ID provided");
       return NextResponse.json({ error: "共有IDが必要です" }, { status: 400 });
     }
 
     const stored = shareStorage.get(shareId);
 
     if (!stored) {
+      console.error("Share GET Error: ID not found in storage:", shareId);
       return NextResponse.json({ error: "共有リンクが見つかりません" }, { status: 404 });
     }
 
     // 期限切れチェック
-    if (Date.now() - stored.createdAt > EXPIRY_TIME) {
+    const age = Date.now() - stored.createdAt;
+    if (age > EXPIRY_TIME) {
+      console.log("Share GET: Link expired, age:", age, "EXPIRY_TIME:", EXPIRY_TIME);
       shareStorage.delete(shareId);
       return NextResponse.json({ error: "共有リンクの有効期限が切れています" }, { status: 410 });
     }
 
+    console.log("Share GET: Success, returning data for ID:", shareId);
     return NextResponse.json({ result: stored.data });
   } catch (error: any) {
     console.error("Share GET Error:", error);
-    return NextResponse.json({ error: "取得エラーが発生しました" }, { status: 500 });
+    console.error("Error stack:", error.stack);
+    return NextResponse.json({ error: `取得エラーが発生しました: ${error.message}` }, { status: 500 });
   }
 }
 

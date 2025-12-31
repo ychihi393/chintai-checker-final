@@ -19,37 +19,128 @@ type AnalysisResult = {
 
 // --- 危険度ゲージコンポーネント（バー型） ---
 const RiskGauge = ({ score }: { score: number }) => {
-  let barColor = "bg-gradient-to-r from-green-400 to-green-600";
-  let textColor = "text-green-600";
-  let bgColor = "bg-green-50";
+  // お金のイメージ：ゴールド/金色のグラデーション
+  const goldColors = {
+    light: "#fbbf24", // amber-400
+    mid: "#f59e0b",   // amber-500
+    dark: "#d97706",  // amber-600
+    darker: "#b45309" // amber-700
+  };
+  
+  let textColor = "text-amber-700";
+  let coinColor = goldColors;
   
   if (score > 40) {
-    barColor = "bg-gradient-to-r from-yellow-400 to-yellow-600";
-    textColor = "text-yellow-600";
-    bgColor = "bg-yellow-50";
+    // 警告：オレンジゴールド
+    coinColor = {
+      light: "#fb923c", // orange-400
+      mid: "#f97316",   // orange-500
+      dark: "#ea580c",  // orange-600
+      darker: "#c2410c" // orange-700
+    };
+    textColor = "text-orange-700";
   }
   if (score > 70) {
-    barColor = "bg-gradient-to-r from-red-400 to-red-600";
-    textColor = "text-red-600";
-    bgColor = "bg-red-50";
+    // 危険：赤銅色
+    coinColor = {
+      light: "#f87171", // red-400
+      mid: "#ef4444",   // red-500
+      dark: "#dc2626",  // red-600
+      darker: "#b91c1c" // red-700
+    };
+    textColor = "text-red-700";
   }
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-slate-700">払いすぎ危険度</span>
-        <span className={`text-2xl font-black ${textColor}`}>{score}<span className="text-sm text-slate-400">/100</span></span>
+    <div className="w-full animate-fade-in-up">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold text-slate-700 tracking-wide uppercase">払いすぎ危険度</span>
+        <div className="flex items-baseline gap-1">
+          <span className={`text-3xl font-black ${textColor} drop-shadow-md`} style={{ 
+            textShadow: `0 2px 8px ${coinColor.mid}40`
+          }}>{score}</span>
+          <span className="text-sm text-slate-400 font-medium">/100</span>
+        </div>
       </div>
-      <div className="relative h-8 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-        {/* 背景グラデーション */}
-        <div className={`absolute inset-0 ${bgColor} opacity-30`}></div>
-        {/* プログレスバー */}
-        <div 
-          className={`h-full ${barColor} rounded-full transition-all duration-1000 ease-out shadow-lg relative overflow-hidden`}
-          style={{ width: `${score}%` }}
-        >
-          {/* 光沢エフェクト */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+      
+      {/* メインゲージコンテナ */}
+      <div className="relative">
+        {/* 背景の光る効果 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-100/30 via-yellow-100/20 to-amber-100/30 rounded-full blur-xl -z-10" style={{ height: '150%', top: '-25%' }}></div>
+        
+        {/* ゲージ本体（細く） */}
+        <div className="relative h-6 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full overflow-hidden shadow-inner border border-slate-300/50">
+          {/* 背景パターン（コインのイメージ） */}
+          <div className="absolute inset-0 opacity-10" style={{
+            backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1) 1px, transparent 1px)',
+            backgroundSize: '12px 12px'
+          }}></div>
+          
+          {/* プログレスバー（ゴールド/金色） */}
+          <div 
+            className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+            style={{ 
+              width: `${score}%`,
+              background: `linear-gradient(90deg, ${coinColor.darker} 0%, ${coinColor.dark} 25%, ${coinColor.mid} 50%, ${coinColor.light} 75%, ${coinColor.mid} 100%)`,
+              boxShadow: `
+                inset 0 1px 2px rgba(255,255,255,0.3),
+                inset 0 -1px 2px rgba(0,0,0,0.2),
+                0 0 12px ${coinColor.mid}60,
+                0 0 6px ${coinColor.light}40
+              `
+            }}
+          >
+            {/* メタリックな光沢 */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/50 via-transparent to-black/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            
+            {/* コインのようなハイライト */}
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/60 via-white/20 to-transparent"></div>
+            <div className="absolute top-1/2 left-0 right-0 h-1/2 bg-gradient-to-b from-transparent via-black/10 to-black/20"></div>
+            
+            {/* コインの縁のような効果 */}
+            <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-r from-white/40 to-transparent"></div>
+            <div className="absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-l from-white/40 to-transparent"></div>
+          </div>
+          
+          {/* スコア表示（ゲージ上） */}
+          {score > 20 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="text-xs font-black text-white drop-shadow-lg" style={{
+                textShadow: '0 1px 3px rgba(0,0,0,0.5), 0 0 4px rgba(0,0,0,0.3)'
+              }}>{score}%</span>
+            </div>
+          )}
+        </div>
+        
+        {/* 安全/危険のインジケーター */}
+        <div className="mt-3 flex justify-between items-center">
+          <span className="text-xs text-slate-500 font-medium">安全</span>
+          <div className="flex gap-1.5">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const isActive = i * 25 < score;
+              return (
+                <div
+                  key={i}
+                  className="relative"
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: isActive ? coinColor.mid : '#e2e8f0',
+                    boxShadow: isActive 
+                      ? `0 0 8px ${coinColor.mid}60, inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.2)`
+                      : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-full"></div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <span className="text-xs text-slate-500 font-medium">危険</span>
         </div>
       </div>
     </div>
@@ -66,14 +157,36 @@ export default function SharePage() {
   useEffect(() => {
     const fetchShareData = async () => {
       try {
+        if (!params.id || typeof params.id !== 'string') {
+          throw new Error("共有IDが無効です");
+        }
+        
         const res = await fetch(`/api/share?id=${params.id}`);
         if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "データの取得に失敗しました");
+          let errorMessage = "データの取得に失敗しました";
+          try {
+            const errorData = await res.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // JSON解析に失敗した場合はデフォルトメッセージを使用
+            if (res.status === 404) {
+              errorMessage = "共有リンクが見つかりませんでした";
+            } else if (res.status === 410) {
+              errorMessage = "共有リンクの有効期限が切れています";
+            } else {
+              errorMessage = `エラーが発生しました（ステータス: ${res.status}）`;
+            }
+          }
+          throw new Error(errorMessage);
         }
+        
         const data = await res.json();
+        if (!data.result) {
+          throw new Error("データ形式が正しくありません");
+        }
         setResult(data.result);
       } catch (err: any) {
+        console.error("Share data fetch error:", err);
         setError(err.message || "エラーが発生しました");
       } finally {
         setIsLoading(false);
@@ -82,6 +195,9 @@ export default function SharePage() {
 
     if (params.id) {
       fetchShareData();
+    } else {
+      setError("共有IDが指定されていません");
+      setIsLoading(false);
     }
   }, [params.id]);
 

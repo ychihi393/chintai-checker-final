@@ -194,18 +194,67 @@ export default function Home() {
   const [isCopied, setIsCopied] = useState(false);
 
   const handleEstimateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setEstimateFile(file);
-      setEstimatePreview(URL.createObjectURL(file));
-      setErrorMessage("");
+    const file = e.target.files?.[0];
+    if (file) {
+      // ファイルタイプの検証
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage("画像ファイルを選択してください");
+        e.target.value = ''; // リセット
+        return;
+      }
+      
+      // ファイルサイズの検証（10MB制限）
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage("画像サイズが大きすぎます（10MB以下にしてください）");
+        e.target.value = ''; // リセット
+        return;
+      }
+      
+      try {
+        setEstimateFile(file);
+        // 既存のプレビューURLを解放
+        if (estimatePreview) {
+          URL.revokeObjectURL(estimatePreview);
+        }
+        setEstimatePreview(URL.createObjectURL(file));
+        setErrorMessage("");
+      } catch (error) {
+        console.error("File handling error:", error);
+        setErrorMessage("ファイルの読み込みに失敗しました");
+        e.target.value = ''; // リセット
+      }
     }
   };
   const handlePlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setPlanFile(file);
-      setPlanPreview(URL.createObjectURL(file));
+    const file = e.target.files?.[0];
+    if (file) {
+      // ファイルタイプの検証
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage("画像ファイルを選択してください");
+        e.target.value = ''; // リセット
+        return;
+      }
+      
+      // ファイルサイズの検証（10MB制限）
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage("画像サイズが大きすぎます（10MB以下にしてください）");
+        e.target.value = ''; // リセット
+        return;
+      }
+      
+      try {
+        setPlanFile(file);
+        // 既存のプレビューURLを解放
+        if (planPreview) {
+          URL.revokeObjectURL(planPreview);
+        }
+        setPlanPreview(URL.createObjectURL(file));
+        setErrorMessage("");
+      } catch (error) {
+        console.error("File handling error:", error);
+        setErrorMessage("ファイルの読み込みに失敗しました");
+        e.target.value = ''; // リセット
+      }
     }
   };
 
@@ -253,10 +302,27 @@ export default function Home() {
       setLoadingStep("AI解析中...");
       const res = await fetch("/api/analyze", { method: "POST", body: formData });
       if (!res.ok) {
-         const data = await res.json().catch(() => ({}));
-         throw new Error(data.error || "システムエラーが発生しました");
+         let errorData: any = {};
+         try {
+           errorData = await res.json();
+         } catch (e) {
+           // JSON解析に失敗した場合
+           errorData = { error: `サーバーエラー（ステータス: ${res.status}）` };
+         }
+         
+         // 429エラー（レート制限）の特別処理
+         if (res.status === 429) {
+           const rateLimitMessage = errorData.details || errorData.error || "APIレート制限に達しました。しばらく時間をおいてから再度お試しください。";
+           throw new Error(rateLimitMessage);
+         }
+         
+         const errorMessage = errorData.error || errorData.details || "システムエラーが発生しました";
+         throw new Error(errorMessage);
       }
       const data = await res.json();
+      if (!data.result) {
+        throw new Error("解析結果の形式が正しくありません");
+      }
       if (timerRef.current) clearTimeout(timerRef.current);
       
       setLoadingProgress(100);
@@ -417,29 +483,61 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-10">
-            <label className="group cursor-pointer block">
+          <div className="flex flex-row gap-6 mb-6 justify-center flex-wrap">
+            <label className="group cursor-pointer block flex-1 min-w-[200px] max-w-xs">
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center h-56 hover:border-blue-500 hover:bg-blue-50/50 transition-all relative overflow-hidden">
                 <input type="file" accept="image/*" onChange={handleEstimateChange} className="hidden" />
                 {estimatePreview ? (
                   <img src={estimatePreview} className="w-full h-full object-contain absolute inset-0 p-2" />
                 ) : (
                   <>
-                    <div className="text-4xl mb-3">📄</div>
+                    <div className="relative mb-3 flex items-center justify-center h-24">
+                      <img 
+                        src="/estimate-icon.png" 
+                        alt="見積書" 
+                        className="max-w-[96px] max-h-[96px] object-contain drop-shadow-md"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+                          if (fallback) {
+                            fallback.classList.remove('hidden');
+                            fallback.classList.add('block');
+                          }
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className="text-4xl mb-3 hidden fallback-icon">📄</div>
+                    </div>
                     <span className="font-bold text-slate-700">見積書</span>
                     <span className="text-xs text-white bg-red-500 px-2 py-0.5 rounded-full mt-2 font-bold">必須</span>
                   </>
                 )}
               </div>
             </label>
-            <label className="group cursor-pointer block">
+            <label className="group cursor-pointer block flex-1 min-w-[200px] max-w-xs">
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center h-56 hover:border-emerald-500 hover:bg-emerald-50/50 transition-all relative overflow-hidden">
                 <input type="file" accept="image/*" onChange={handlePlanChange} className="hidden" />
                 {planPreview ? (
                   <img src={planPreview} className="w-full h-full object-contain absolute inset-0 p-2" />
                 ) : (
                   <>
-                    <div className="text-4xl mb-3">🗺️</div>
+                    <div className="relative mb-3 flex items-center justify-center h-24">
+                      <img 
+                        src="/plan-icon.png" 
+                        alt="募集図面" 
+                        className="max-w-[96px] max-h-[96px] object-contain drop-shadow-md"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+                          if (fallback) {
+                            fallback.classList.remove('hidden');
+                            fallback.classList.add('block');
+                          }
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className="text-4xl mb-3 hidden fallback-icon">🗺️</div>
+                    </div>
                     <span className="font-bold text-slate-700">募集図面</span>
                     <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full mt-2">任意</span>
                   </>
@@ -447,6 +545,18 @@ export default function Home() {
               </div>
             </label>
           </div>
+          
+          {/* 募集図面アップロードの説明 */}
+          {!planPreview && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-10 text-center animate-fade-in-up">
+              <p className="text-sm text-blue-800 font-bold">
+                💡 <span className="text-blue-700">募集図面をアップロードすると診断精度がアップします</span>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                図面と見積書を照合することで、より正確な診断が可能になります
+              </p>
+            </div>
+          )}
 
           <div className="text-center">
             {!isLoading ? (
@@ -598,13 +708,24 @@ export default function Home() {
               content = content.replace(/総評は[^\n]*\n?/g, '');
               content = content.replace(/説明文や指示文は一切含めないでください[^\n]*\n?/g, '');
               
+              // 重複した文章を削除（同じ内容が2回以上出てくる場合）
+              const seenLines = new Set<string>();
               const lines = content.split('\n').filter(line => {
                 const trimmed = line.trim();
-                return trimmed && 
-                       !trimmed.match(/^【出力JSON形式】|^Markdown|^savings_magic/) &&
-                       !trimmed.match(/この物件の初期費用について/) &&
-                       !trimmed.match(/以下の点を必ず含めて/) &&
-                       !trimmed.match(/総評は[^\n]*フォーマット/);
+                if (!trimmed) return false;
+                
+                // 説明文的なパターンを除外
+                if (trimmed.match(/^【出力JSON形式】|^Markdown|^savings_magic/)) return false;
+                if (trimmed.match(/この物件の初期費用について/)) return false;
+                if (trimmed.match(/以下の点を必ず含めて/)) return false;
+                if (trimmed.match(/総評は[^\n]*フォーマット/)) return false;
+                
+                // 重複チェック（完全一致）
+                const normalized = trimmed.toLowerCase().replace(/\s+/g, ' ');
+                if (seenLines.has(normalized)) return false;
+                seenLines.add(normalized);
+                
+                return true;
               });
               
               if (lines.length === 0) {
@@ -635,12 +756,23 @@ export default function Home() {
                 ? lines.slice(summaryIndex + 2) // 【総括】とその次の行をスキップ
                 : lines.slice(1); // 最初の行をスキップ
               
+              // 固定の注意書きを分離
+              const noticeText = "※今回の診断結果はあくまで『書面上で分かる範囲』の減額です。";
+              const negotiationText = "交渉が面倒、怖いと感じる方もご安心ください。私たちが全ての交渉を代行し、最安値で契約できるようサポートします。まずはLINEでご相談ください。";
+              
+              // 固定文章をrestLinesから除外
+              const filteredRestLines = restLines.filter(line => {
+                const trimmed = line.trim();
+                return trimmed !== noticeText && !trimmed.includes(noticeText) && 
+                       trimmed !== negotiationText && !trimmed.includes(negotiationText);
+              });
+              
               return (
                 <>
                   {summary && (
                     <p className="font-black text-blue-700 text-base mb-3">{summary}</p>
                   )}
-                  {restLines.map((line, i) => {
+                  {filteredRestLines.map((line, i) => {
                     const trimmed = line.trim();
                     // 【最善の行動】【ポイント】などの見出しは削除（見出し自体は表示しない）
                     if (trimmed.match(/^【.*】$/)) {
@@ -656,6 +788,9 @@ export default function Home() {
                     }
                     return <p key={i} className="mb-2">{trimmed}</p>;
                   }).filter(Boolean)}
+                  {/* 固定の注意書きを赤文字で表示 */}
+                  <p className="text-red-600 font-bold text-sm mt-4 mb-2">{noticeText}</p>
+                  <p className="text-slate-700 text-sm">{negotiationText}</p>
                 </>
               );
             })()}
