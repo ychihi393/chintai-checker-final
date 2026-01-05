@@ -192,31 +192,41 @@ export async function POST(req: Request) {
 ## 抽出データ
 ${JSON.stringify(extractionResult, null, 2)}
 
-## 【絶対ルール】判定基準
+## 【絶対ルール】判定基準と理由の書き方
 
-### ルール1: flyer_status = "free" の項目
-図面に「無料」と記載されているのに見積書に金額がある
-→ **必ず status: "cut", price_fair: 0, reason: "図面に無料と記載あり"**
+### ルール1: flyer_status = "free" の項目（図面に「無料」と記載）
+→ status: "cut", price_fair: 0
+→ reason: "**図面に「無料」と記載があるため、この請求は削除できます**"
+→ evidence.source_description: "図面に無料と明記されているため削減可能"
 
-### ルール2: flyer_status = "not_found" の項目
-図面に記載がない項目は以下のように判定：
-- 消毒・抗菌系 → **cut**（任意オプション）
-- サポート系 → **cut**（任意オプション）
-- 消火器 → **cut**（法的義務なし）
-- 鍵交換 → **negotiable**（交渉余地あり）
-- その他 → **negotiable**
+### ルール2: flyer_status = "not_found" の項目（図面に記載なし）
+→ status: "cut" または "negotiable"
+→ reason: "**図面に記載がないため、削減交渉が可能です**"
+→ evidence.source_description: "図面に記載なし。任意オプションのため削減可能"
 
-### ルール3: flyer_status = "recorded" の項目
-図面に金額記載あり
-- 見積書と同額 → **fair**
-- 見積書が高い → **negotiable**
+具体的な判定：
+- 消毒・抗菌系 → cut, reason: "図面に記載がないため、削減交渉が可能です"
+- サポート系 → cut, reason: "図面に記載がないため、削減交渉が可能です"
+- 消火器 → cut, reason: "図面に記載がないため、削減交渉が可能です"
+- 鍵交換 → negotiable, reason: "図面に記載がないため、交渉の余地があります"
+
+### ルール3: flyer_status = "recorded" の項目（図面に金額記載あり）
+→ status: "fair"
+→ reason: "**図面に記載があり、適正な費用です**"
+→ evidence.source_description: "図面に○○円と記載あり"
 
 ### ルール4: 基本項目の判定
-- 敷金・礼金: 図面と一致なら **fair**
-- 前家賃・管理費: **fair**
-- 仲介手数料: 家賃の1ヶ月分なら **negotiable**（0.5ヶ月が原則）、0.5ヶ月以下なら **fair**
-- 火災保険: 20,000円以下なら **fair**、超えたら **negotiable**
-- 保証会社: 50%程度なら **fair**
+- 敷金・礼金: 図面と一致 → fair, reason: "図面の記載と一致しており、適正です"
+- 前家賃・管理費: → fair, reason: "図面の記載と一致しており、適正です"
+- 仲介手数料: 1ヶ月分 → negotiable, reason: "法定上限は0.5ヶ月分のため、交渉の余地があります"
+- 火災保険: 20,000円超 → negotiable, reason: "相場より高いため、交渉の余地があります"
+- 保証会社: 50%超 → negotiable, reason: "相場より高いため、交渉の余地があります"
+
+## 【重要】reasonの書き方
+- 図面に無料記載 → 「図面に「無料」と記載があるため、この請求は削除できます」
+- 図面に記載なし → 「図面に記載がないため、削減交渉が可能です」
+- 図面に記載あり → 「図面に記載があり、適正な費用です」
+- 相場より高い → 「相場より高いため、交渉の余地があります」
 
 ## 出力形式（JSON）
 {
@@ -226,11 +236,11 @@ ${JSON.stringify(extractionResult, null, 2)}
       "price_original": 見積書の金額,
       "price_fair": 適正価格,
       "status": "fair" | "negotiable" | "cut",
-      "reason": "判定理由",
+      "reason": "上記ルールに従った判定理由",
       "evidence": {
-        "flyer_evidence": "図面の記載内容",
-        "estimate_evidence": "見積書の記載内容",
-        "source_description": "判定根拠"
+        "flyer_evidence": "図面から読み取った原文（例: 入居者安心サポート: 無料）",
+        "estimate_evidence": "見積書から読み取った原文（例: 24時間サポート: 16,500円）",
+        "source_description": "図面に○○と記載 / 図面に記載なし"
       }
     }
   ],
