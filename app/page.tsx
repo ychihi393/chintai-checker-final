@@ -84,7 +84,7 @@ const CameraCapture = ({
       case "plan":
         return "募集図面全体を枠内に収めてください";
       case "condition":
-        return "条件欄を枠内に収めてください";
+        return "条件欄（家賃・敷金・礼金・備考）を拡大して撮影";
     }
   };
 
@@ -840,8 +840,8 @@ export default function Home() {
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">🔍</span>
                         <div>
-                          <p className="text-slate-300 text-xs font-bold">条件欄アップ</p>
-                          <p className="text-slate-500 text-[10px]">敷金・礼金等の記載部分</p>
+                          <p className="text-slate-300 text-xs font-bold">条件欄を拡大撮影</p>
+                          <p className="text-slate-500 text-[10px]">家賃・敷金・礼金・備考欄を拡大</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
