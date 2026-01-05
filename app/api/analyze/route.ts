@@ -1,10 +1,9 @@
 /**
  * 賃貸初期費用診断 API
  * 
- * シンプル版:
- * - 1回のAPI呼び出しで完結（タイムアウト対策）
- * - 厳格な判定ルールと具体的な根拠出力
- * - temperature=0で安定した出力
+ * シンプル版 + 裏コマンド機能:
+ * - 見積書/図面の場合 → 通常の診断
+ * - 関係ない画像の場合 → 特別な診断（占い/褒め倒し）
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -71,6 +70,353 @@ export async function POST(req: Request) {
       });
     }
 
+    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-pro";
+    
+    // ========================================
+    // 【第1段階】画像の種類を判定
+    // ========================================
+    const classificationPrompt = `
+この画像を分析して、以下のどれに該当するか判定してください。
+
+1. "estimate" - 賃貸の見積書・初期費用明細書
+2. "flyer" - 賃貸の募集図面・マイソク
+3. "face" - 人の顔が写っている写真
+4. "animal" - 動物が写っている写真
+5. "food" - 食べ物の写真
+6. "scenery" - 風景・建物の写真
+7. "other" - その他
+
+JSON形式で出力してください:
+{
+  "type": "estimate" | "flyer" | "face" | "animal" | "food" | "scenery" | "other",
+  "confidence": 0-100,
+  "description": "画像の簡単な説明"
+}
+`;
+
+    const classificationParts = [parts[0], { text: classificationPrompt }];
+    
+    const model = genAI.getGenerativeModel({ 
+      model: primaryModel, 
+      generationConfig: { 
+        responseMimeType: "application/json",
+        temperature: 0
+      }
+    });
+    
+    console.log("画像分類中...");
+    const classificationResult = await model.generateContent(classificationParts);
+    const classificationText = classificationResult.response.text();
+    const cleanedClassification = classificationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const classification = JSON.parse(cleanedClassification);
+    
+    console.log("画像分類結果:", classification);
+
+    // ========================================
+    // 【裏コマンド】関係ない画像の場合
+    // ========================================
+    if (classification.type !== "estimate" && classification.type !== "flyer") {
+      console.log("裏コマンド発動！画像タイプ:", classification.type);
+      
+      let secretPrompt = "";
+      
+      if (classification.type === "face") {
+        // 顔写真 → 占い風の診断
+        secretPrompt = `
+あなたは伝説の占い師「マダム・エステート」です。
+この人物の写真から、その人の運勢と隠された才能を読み取ってください。
+
+【重要ルール】
+- 必ずポジティブで褒め倒す内容にする
+- 具体的で面白い診断をする
+- 不動産に絡めたユーモアを入れる
+
+JSON形式で出力:
+{
+  "property_name": "🔮 運命の占い診断",
+  "room_number": "✨ 特別鑑定",
+  "items": [
+    {
+      "name": "総合運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "あなたの運勢は最高です！（具体的に褒める内容を書く）",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "占星術による鑑定" }
+    },
+    {
+      "name": "金運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "金運について褒める内容",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "手相学による鑑定" }
+    },
+    {
+      "name": "恋愛運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "恋愛運について褒める内容",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "タロットによる鑑定" }
+    },
+    {
+      "name": "住居運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "最高の物件に巡り会える運命です！（不動産に絡めた内容）",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "風水による鑑定" }
+    },
+    {
+      "name": "隠された才能",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この人の隠された才能を具体的に褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "オーラ診断" }
+    }
+  ],
+  "total_original": 500,
+  "total_fair": 500,
+  "discount_amount": 0,
+  "risk_score": 0,
+  "pro_review": {
+    "content": "【🔮 マダム・エステートの特別鑑定】\\n\\nあなたの顔相から読み取れる運命は...（壮大で褒め倒す総評を書く。最後は「最高の物件との出会いが近づいています✨」で締める）"
+  }
+}
+`;
+      } else if (classification.type === "animal") {
+        // 動物 → 動物鑑定
+        secretPrompt = `
+あなたは世界的に有名な動物鑑定士「ドクター・アニマルエステート」です。
+この動物の写真から、その動物の素晴らしさを最大限に褒めてください。
+
+【重要ルール】
+- 必ずポジティブで褒め倒す
+- 具体的で面白い鑑定をする
+- 不動産に絡めたユーモアを入れる
+
+JSON形式で出力:
+{
+  "property_name": "🐾 動物鑑定書",
+  "room_number": "✨ プレミアム鑑定",
+  "items": [
+    {
+      "name": "可愛さ",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "可愛さについて具体的に褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "専門家による鑑定" }
+    },
+    {
+      "name": "癒し力",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "癒し力について褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "セラピー効果測定" }
+    },
+    {
+      "name": "賢さ",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "賢さについて褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "行動分析" }
+    },
+    {
+      "name": "オーラ",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この子のオーラについて褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "オーラ診断" }
+    },
+    {
+      "name": "ペット可物件運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この子と暮らせる最高の物件が見つかる運命です！",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "不動産運勢" }
+    }
+  ],
+  "total_original": 500,
+  "total_fair": 500,
+  "discount_amount": 0,
+  "risk_score": 0,
+  "pro_review": {
+    "content": "【🐾 ドクター・アニマルエステートの鑑定結果】\\n\\nこの子は...（壮大で褒め倒す総評。最後は「この子と暮らせるペット可物件、探しましょう！🏠」で締める）"
+  }
+}
+`;
+      } else if (classification.type === "food") {
+        // 食べ物 → グルメ鑑定
+        secretPrompt = `
+あなたは伝説の美食家「グルメ・エステート卿」です。
+この料理の写真から、その素晴らしさを最大限に褒めてください。
+
+【重要ルール】
+- 必ずポジティブで褒め倒す
+- 具体的で面白い鑑定をする
+- 不動産に絡めたユーモアを入れる
+
+JSON形式で出力:
+{
+  "property_name": "🍽️ グルメ鑑定書",
+  "room_number": "⭐ 三ツ星鑑定",
+  "items": [
+    {
+      "name": "見た目",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "見た目について褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "ビジュアル評価" }
+    },
+    {
+      "name": "美味しさ予測",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "美味しさについて褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "AI味覚分析" }
+    },
+    {
+      "name": "幸福度",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この料理を食べる人の幸福度について",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "幸福度測定" }
+    },
+    {
+      "name": "料理スキル",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "作った人の料理スキルを褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "技術評価" }
+    },
+    {
+      "name": "キッチン運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "広いキッチンのある物件に住む運命です！",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "不動産運勢" }
+    }
+  ],
+  "total_original": 500,
+  "total_fair": 500,
+  "discount_amount": 0,
+  "risk_score": 0,
+  "pro_review": {
+    "content": "【🍽️ グルメ・エステート卿の鑑定】\\n\\nこの料理は...（壮大で褒め倒す総評。最後は「こんな料理が作れるあなたには、広いキッチンのある物件がお似合いです🏠」で締める）"
+  }
+}
+`;
+      } else {
+        // その他 → 万能褒め鑑定
+        secretPrompt = `
+あなたは「万物鑑定士マスター・エステート」です。
+この画像に写っているものを最大限に褒めてください。
+
+画像の内容: ${classification.description}
+
+【重要ルール】
+- 必ずポジティブで褒め倒す
+- 具体的で面白い鑑定をする
+- 不動産に絡めたユーモアを入れる
+
+JSON形式で出力:
+{
+  "property_name": "🌟 特別鑑定書",
+  "room_number": "✨ レア鑑定",
+  "items": [
+    {
+      "name": "素晴らしさ",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この画像の素晴らしい点を具体的に褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "専門家による鑑定" }
+    },
+    {
+      "name": "芸術性",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "芸術的な観点から褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "アート分析" }
+    },
+    {
+      "name": "センス",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "撮影者・所有者のセンスを褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "センス評価" }
+    },
+    {
+      "name": "運気",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "この画像から感じる運気について褒める",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "運気測定" }
+    },
+    {
+      "name": "不動産運",
+      "price_original": 100,
+      "price_fair": 100,
+      "status": "fair",
+      "reason": "最高の物件に巡り会える運命です！",
+      "evidence": { "flyer_evidence": null, "estimate_evidence": null, "source_description": "不動産運勢" }
+    }
+  ],
+  "total_original": 500,
+  "total_fair": 500,
+  "discount_amount": 0,
+  "risk_score": 0,
+  "pro_review": {
+    "content": "【🌟 マスター・エステートの鑑定】\\n\\nこの画像は...（壮大で褒め倒す総評。最後は「素晴らしいセンスをお持ちのあなたには、きっと最高の物件が見つかります🏠」で締める）"
+  }
+}
+`;
+      }
+
+      const secretParts = [parts[0], { text: secretPrompt }];
+      const secretModel = genAI.getGenerativeModel({ 
+        model: primaryModel, 
+        generationConfig: { 
+          responseMimeType: "application/json",
+          temperature: 0.9 // 創造性を上げる
+        }
+      });
+      
+      const secretResult = await secretModel.generateContent(secretParts);
+      const secretText = secretResult.response.text();
+      const cleanedSecret = secretText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const secretJson = JSON.parse(cleanedSecret);
+      
+      // 裏コマンドフラグを追加
+      secretJson.is_secret_mode = true;
+      secretJson.secret_type = classification.type;
+      secretJson.has_unconfirmed_items = false;
+      secretJson.unconfirmed_item_names = [];
+      
+      console.log("裏コマンド診断完了！");
+      return NextResponse.json({ result: secretJson });
+    }
+
+    // ========================================
+    // 【通常モード】見積書/図面の診断
+    // ========================================
+    console.log("通常診断モード開始...");
+    
     const prompt = `
 あなたは「入居者の味方をする、経験豊富な不動産コンサルタント」です。
 見積書と募集図面を**厳密に照合**し、不当な費用を見つけ出してください。
@@ -155,18 +501,6 @@ export async function POST(req: Request) {
 `;
 
     parts.push({ text: prompt });
-
-    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-pro";
-    
-    console.log("AI解析開始... モデル:", primaryModel);
-    
-    const model = genAI.getGenerativeModel({ 
-      model: primaryModel, 
-      generationConfig: { 
-        responseMimeType: "application/json",
-        temperature: 0
-      }
-    });
     
     const result = await model.generateContent(parts);
     const responseText = result.response.text();
