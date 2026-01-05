@@ -722,7 +722,13 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <div className="text-5xl mb-3">📄</div>
+                    <div className="mb-3 flex justify-center">
+                      <img 
+                        src="/estimate-icon.png" 
+                        alt="見積書" 
+                        className="w-16 h-16 object-contain drop-shadow-md"
+                      />
+                    </div>
                     <p className="text-slate-400 text-sm mb-4">見積書の画像</p>
                     <div className="flex gap-2 justify-center flex-wrap">
                       <button
@@ -778,7 +784,11 @@ export default function Home() {
                   ) : (
                     <div className="flex items-center justify-between px-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">🗺️</span>
+                        <img 
+                          src="/plan-icon.png" 
+                          alt="図面" 
+                          className="w-10 h-10 object-contain drop-shadow-md"
+                        />
                         <div>
                           <p className="text-slate-300 text-xs font-bold">図面全体</p>
                           <p className="text-slate-500 text-[10px]">物件情報が記載された図面</p>
