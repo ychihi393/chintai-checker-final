@@ -379,9 +379,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStep, setLoadingStep] = useState("");
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const progressRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const elapsedTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingStartRef = useRef<number>(0);
   const resultRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
@@ -452,16 +455,55 @@ export default function Home() {
     setErrorMessage("");
     setResult(null);
 
+    // 経過時間の計測開始
+    loadingStartRef.current = Date.now();
+    setLoadingElapsed(0);
+    
+    const updateElapsed = () => {
+      const elapsed = Math.floor((Date.now() - loadingStartRef.current) / 1000);
+      setLoadingElapsed(elapsed);
+      elapsedTimerRef.current = setTimeout(updateElapsed, 1000);
+    };
+    updateElapsed();
+
+    // ローディングメッセージのバリエーション
+    const loadingMessages = [
+      { threshold: 5, messages: ["見積書の文字を読み取り中...", "項目名を認識中...", "金額データを抽出中..."] },
+      { threshold: 15, messages: ["図面の情報を解析中...", "条件欄を確認中...", "記載内容を照合中..."] },
+      { threshold: 30, messages: ["敷金・礼金を確認中...", "仲介手数料を分析中...", "保証会社費用をチェック中..."] },
+      { threshold: 45, messages: ["付帯オプションを精査中...", "消毒費用を検証中...", "サポート料金を確認中..."] },
+      { threshold: 60, messages: ["市場相場と比較中...", "適正価格を算出中...", "削減可能額を計算中..."] },
+      { threshold: 75, messages: ["交渉ポイントを整理中...", "リスク評価を実施中...", "最終チェック中..."] },
+      { threshold: 90, messages: ["診断結果をまとめ中...", "レポートを生成中...", "もうすぐ完了..."] },
+      { threshold: 100, messages: ["最終処理中...", "完了間近..."] }
+    ];
+    
+    let messageIndex = 0;
+    let lastThreshold = 0;
+
     const runAnimation = () => {
       const current = progressRef.current;
       let increment = 0; let delay = 100;
-      if (current < 15) { increment = 0.8; delay = 100; setLoadingStep("📄 見積書をスキャン中..."); }
-      else if (current < 30) { increment = 0.5; delay = 120; setLoadingStep("🗺️ 図面から項目を抽出中..."); }
-      else if (current < 50) { increment = 0.3; delay = 150; setLoadingStep("🔍 1回目の診断実行中..."); }
-      else if (current < 65) { increment = 0.25; delay = 180; setLoadingStep("🔍 2回目の診断実行中..."); }
-      else if (current < 80) { increment = 0.2; delay = 200; setLoadingStep("🔍 3回目の診断実行中..."); }
-      else if (current < 95) { increment = 0.1; delay = 250; setLoadingStep("⚖️ 多数決で最終判定中..."); }
-      else { increment = 0.02; delay = 300; setLoadingStep("📊 レポート生成中..."); }
+      
+      if (current < 10) { increment = 0.6; delay = 120; }
+      else if (current < 25) { increment = 0.4; delay = 150; }
+      else if (current < 45) { increment = 0.25; delay = 180; }
+      else if (current < 65) { increment = 0.18; delay = 220; }
+      else if (current < 80) { increment = 0.12; delay = 280; }
+      else if (current < 95) { increment = 0.06; delay = 350; }
+      else { increment = 0.02; delay = 400; }
+      
+      // メッセージの更新
+      for (const stage of loadingMessages) {
+        if (current < stage.threshold && lastThreshold !== stage.threshold) {
+          const randomMessage = stage.messages[messageIndex % stage.messages.length];
+          setLoadingStep(randomMessage);
+          messageIndex++;
+          lastThreshold = stage.threshold;
+          break;
+        }
+      }
+      
       if (current + increment < 99) { progressRef.current += increment; } 
       else { progressRef.current = 99; }
       setLoadingProgress(progressRef.current);
@@ -518,9 +560,10 @@ export default function Home() {
         throw new Error("解析結果の形式が正しくありません");
       }
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (elapsedTimerRef.current) clearTimeout(elapsedTimerRef.current);
       
       setLoadingProgress(100);
-      setLoadingStep("完了");
+      setLoadingStep("✨ 診断完了！");
       setTimeout(() => {
         setResult(data.result);
         setShareId(null);
@@ -530,6 +573,7 @@ export default function Home() {
       }, 600);
     } catch (error: unknown) {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (elapsedTimerRef.current) clearTimeout(elapsedTimerRef.current);
       const errorMsg = error instanceof Error ? error.message : "解析に失敗しました。";
       setErrorMessage(errorMsg);
       setIsLoading(false);
@@ -899,15 +943,47 @@ export default function Home() {
                 {!estimateFile ? "見積書をアップロードしてください" : "適正価格を診断する"}
               </button>
             ) : (
-              <div className="bg-slate-800/80 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl max-w-sm mx-auto">
-                <div className="flex justify-between text-sm font-bold text-white mb-2">
-                  <span>解析進行中...</span>
-                  <span>{Math.floor(loadingProgress)}%</span>
+              <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl max-w-md mx-auto">
+                {/* 上部: 進捗率と経過時間 */}
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-bold text-white">AI診断中</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-blue-400">{Math.floor(loadingProgress)}</span>
+                    <span className="text-sm text-slate-400">%</span>
+                  </div>
                 </div>
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-2">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300" style={{ width: `${loadingProgress}%` }}></div>
+                
+                {/* プログレスバー */}
+                <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 transition-all duration-300 relative"
+                    style={{ width: `${loadingProgress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-400">{loadingStep}</p>
+                
+                {/* 現在のステップ */}
+                <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
+                  <p className="text-sm text-white font-medium text-center">{loadingStep}</p>
+                </div>
+                
+                {/* 経過時間と残り時間目安 */}
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>経過: {loadingElapsed}秒</span>
+                  <span>
+                    {loadingProgress < 30 
+                      ? "残り約20〜25秒" 
+                      : loadingProgress < 60 
+                        ? "残り約15〜20秒"
+                        : loadingProgress < 85
+                          ? "残り約5〜10秒"
+                          : "まもなく完了"}
+                  </span>
+                </div>
               </div>
             )}
           </div>
