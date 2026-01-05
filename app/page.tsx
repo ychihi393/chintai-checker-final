@@ -697,7 +697,7 @@ export default function Home() {
           </div>
 
           {/* 2カラムレイアウト: 左=見積書, 右=図面＆条件欄 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-8">
             {/* 左カラム: 見積書 */}
             <div className="flex flex-col">
               <div className="flex items-center gap-2 mb-3">
