@@ -244,12 +244,11 @@ ${JSON.stringify(extractionResult, null, 2)}
 }
 `;
 
-    // 3回判定を実行
-    const judgmentResults: JudgmentResult[] = [];
+    // 3回判定を並列実行（時間短縮）
+    console.log("判定を3回並列実行中...");
     
-    for (let i = 0; i < 3; i++) {
+    const runJudgment = async (index: number): Promise<JudgmentResult | null> => {
       try {
-        console.log(`判定 ${i + 1}/3 実行中...`);
         const model = genAI.getGenerativeModel({ 
           model: primaryModel, 
           generationConfig: { 
@@ -260,16 +259,24 @@ ${JSON.stringify(extractionResult, null, 2)}
         const response = await model.generateContent([{ text: judgmentPrompt }]);
         const responseText = response.response.text();
         const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        const result = JSON.parse(cleanedText) as JudgmentResult;
-        judgmentResults.push(result);
+        console.log(`判定 ${index + 1}/3 完了`);
+        return JSON.parse(cleanedText) as JudgmentResult;
       } catch (error: any) {
-        console.error(`判定 ${i + 1} エラー:`, error.message);
+        console.error(`判定 ${index + 1} エラー:`, error.message);
+        return null;
       }
-    }
+    };
+
+    // 並列実行
+    const judgmentPromises = [runJudgment(0), runJudgment(1), runJudgment(2)];
+    const judgmentResultsRaw = await Promise.all(judgmentPromises);
+    const judgmentResults = judgmentResultsRaw.filter((r): r is JudgmentResult => r !== null);
 
     if (judgmentResults.length === 0) {
       throw new Error("判定処理に失敗しました");
     }
+    
+    console.log(`判定完了: ${judgmentResults.length}/3 成功`);
 
     // ========================================
     // 【第3段階】多数決で最終判定
