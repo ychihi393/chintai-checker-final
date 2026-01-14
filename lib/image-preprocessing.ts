@@ -123,3 +123,6 @@ export function logImageProcessing(
   console.log(`[ImageProcessing] ${source}: ${imageCount}枚, ${(totalSize / 1024).toFixed(1)}KB`);
 }
 
+
+
+

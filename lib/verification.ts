@@ -277,3 +277,6 @@ export function getNullFields(facts: ExtractedFacts): string[] {
   return nullFields;
 }
 
+
+
+

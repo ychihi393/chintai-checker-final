@@ -654,15 +654,15 @@ export default function Home() {
   const conditionInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (file: File, target: UploadTarget) => {
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage("画像ファイルを選択してください");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMessage("画像サイズが大きすぎます（10MB以下にしてください）");
-      return;
-    }
-    
+      if (!file.type.startsWith('image/')) {
+        setErrorMessage("画像ファイルを選択してください");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage("画像サイズが大きすぎます（10MB以下にしてください）");
+        return;
+      }
+      
     const preview = URL.createObjectURL(file);
     
     switch (target) {
@@ -682,7 +682,7 @@ export default function Home() {
         setConditionPreview(preview);
         break;
     }
-    setErrorMessage("");
+        setErrorMessage("");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, target: UploadTarget) => {
@@ -701,6 +701,10 @@ export default function Home() {
     handleFileChange(file, cameraTarget);
   };
 
+  // 裏コマンドモード判定用の状態
+  const [isSecretModeLoading, setIsSecretModeLoading] = useState(false);
+  const [secretType, setSecretType] = useState<string | null>(null);
+
   const handleAnalyze = async () => {
     if (!estimateFile) return;
     setIsLoading(true);
@@ -708,6 +712,8 @@ export default function Home() {
     progressRef.current = 0;
     setErrorMessage("");
     setResult(null);
+    setIsSecretModeLoading(false);
+    setSecretType(null);
 
     // 経過時間の計測開始
     loadingStartRef.current = Date.now();
@@ -720,8 +726,8 @@ export default function Home() {
     };
     updateElapsed();
 
-    // ローディングメッセージ（しっかり考えている感を演出）
-    const loadingMessages = [
+    // 通常モード用のローディングメッセージ
+    const normalLoadingMessages = [
       "見積書の文字データを読み取っています...",
       "各項目の金額を認識しています...",
       "図面の条件欄と照らし合わせています...",
@@ -741,7 +747,24 @@ export default function Home() {
       "レポートを生成しています...",
       "もうすぐ完了します..."
     ];
-    
+
+    // 裏コマンドモード用のローディングメッセージ
+    const secretLoadingMessages = [
+      "🔮 裏コマンド起動中...",
+      "✨ 神秘の力が目覚めています...",
+      "🌟 占い師に接続しています...",
+      "🔮 マダム・エステートを呼び出し中...",
+      "💫 運命の糸を読み解いています...",
+      "🌙 星々の配置を確認しています...",
+      "✨ あなたのオーラを感知中...",
+      "🔮 水晶玉に映像が浮かんできました...",
+      "💫 運命の書を紐解いています...",
+      "🌟 特別な鑑定を準備中...",
+      "✨ 神秘のメッセージを受信中...",
+      "🔮 鑑定結果をまとめています..."
+    ];
+
+    let loadingMessages = normalLoadingMessages;
     let messageIndex = 0;
     
     // メッセージを3秒ごとに切り替える
@@ -785,6 +808,15 @@ export default function Home() {
       if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
     };
 
+    // 裏コマンドモードに切り替える関数
+    const switchToSecretMode = (type: string) => {
+      setIsSecretModeLoading(true);
+      setSecretType(type);
+      loadingMessages = secretLoadingMessages;
+      messageIndex = 0;
+      setLoadingStep(secretLoadingMessages[0]);
+    };
+
     try {
       const formData = new FormData();
       setLoadingStep("画像を最適化中...");
@@ -811,7 +843,26 @@ export default function Home() {
         }
       }
 
-      setLoadingStep("AI解析中...");
+      // まず画像分類を行い、裏コマンドかどうかを判定
+      setLoadingStep("画像を解析しています...");
+      const classifyFormData = new FormData();
+      classifyFormData.append("estimate", formData.get("estimate") as File);
+      
+      try {
+        const classifyRes = await fetch("/api/classify", { method: "POST", body: classifyFormData });
+        if (classifyRes.ok) {
+          const classifyData = await classifyRes.json();
+          console.log("画像分類結果:", classifyData);
+          
+          if (classifyData.isSecretMode) {
+            // 裏コマンドモードに切り替え
+            switchToSecretMode(classifyData.type);
+          }
+        }
+      } catch (classifyError) {
+        console.log("分類スキップ（通常モードで続行）:", classifyError);
+      }
+
       const res = await fetch("/api/analyze", { method: "POST", body: formData });
       if (!res.ok) {
          let errorData: Record<string, string> = {};
@@ -1097,7 +1148,7 @@ export default function Home() {
               <div className="flex flex-col gap-3 flex-1">
                 {/* 募集図面（全体） */}
                 <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-3 relative overflow-hidden hover:border-emerald-500/50 transition-all flex-1 min-h-[130px] flex flex-col justify-center">
-                  {planPreview ? (
+                {planPreview ? (
                     <div className="relative flex-1 flex items-center justify-center">
                       <img src={planPreview} className="w-full h-full max-h-[110px] object-contain rounded-lg" alt="募集図面プレビュー" />
                       <button
@@ -1114,8 +1165,8 @@ export default function Home() {
                   ) : (
                     <div className="flex items-center justify-between px-2">
                       <div className="flex items-center gap-2">
-                        <img 
-                          src="/plan-icon.png" 
+                      <img 
+                        src="/plan-icon.png" 
                           alt="図面" 
                           className="w-10 h-10 object-contain drop-shadow-md"
                         />
@@ -1196,18 +1247,18 @@ export default function Home() {
                         className="hidden"
                       />
                     </div>
-                  )}
-                </div>
+                )}
+              </div>
               </div>
             </div>
           </div>
-
+          
           {/* 精度アップの説明 */}
           <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-xl p-3 mb-8">
             <p className="text-emerald-300 text-xs text-center">
               💡 募集図面を追加すると、記載条件と見積書を照合してより正確に診断できます
-            </p>
-          </div>
+              </p>
+            </div>
 
           <div className="text-center">
             {!isLoading ? (
@@ -1223,23 +1274,39 @@ export default function Home() {
                 {!estimateFile ? "見積書をアップロードしてください" : "適正価格を診断する"}
               </button>
             ) : (
-              <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 shadow-xl max-w-md mx-auto">
+              <div className={`backdrop-blur-sm rounded-2xl p-6 border shadow-xl max-w-md mx-auto ${
+                isSecretModeLoading 
+                  ? "bg-gradient-to-br from-purple-900/90 via-indigo-900/90 to-purple-900/90 border-purple-500/50" 
+                  : "bg-slate-800/80 border-slate-700"
+              }`}>
                 {/* 上部: 進捗率と経過時間 */}
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-bold text-white">AI診断中</span>
-                  </div>
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${
+                      isSecretModeLoading ? "bg-purple-400" : "bg-blue-500"
+                    }`}></div>
+                    <span className="text-sm font-bold text-white">
+                      {isSecretModeLoading ? "🔮 特別鑑定中" : "AI診断中"}
+                    </span>
+                </div>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-blue-400">{Math.floor(loadingProgress)}</span>
+                    <span className={`text-2xl font-black ${
+                      isSecretModeLoading ? "text-purple-400" : "text-blue-400"
+                    }`}>{Math.floor(loadingProgress)}</span>
                     <span className="text-sm text-slate-400">%</span>
-                  </div>
+                </div>
                 </div>
                 
                 {/* プログレスバー */}
-                <div className="h-2 bg-slate-700 rounded-full overflow-hidden mb-4">
+                <div className={`h-2 rounded-full overflow-hidden mb-4 ${
+                  isSecretModeLoading ? "bg-purple-900/50" : "bg-slate-700"
+                }`}>
                   <div 
-                    className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 transition-all duration-300 relative"
+                    className={`h-full transition-all duration-300 relative ${
+                      isSecretModeLoading 
+                        ? "bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" 
+                        : "bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500"
+                    }`}
                     style={{ width: `${loadingProgress}%` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
@@ -1247,18 +1314,39 @@ export default function Home() {
                 </div>
                 
                 {/* 現在のステップ */}
-                <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
-                  <p className="text-sm text-white font-medium text-center">{loadingStep}</p>
+                <div className={`rounded-lg p-3 mb-3 ${
+                  isSecretModeLoading ? "bg-purple-800/50" : "bg-slate-900/50"
+                }`}>
+                  <p className={`text-sm font-medium text-center ${
+                    isSecretModeLoading ? "text-purple-100" : "text-white"
+                  }`}>{loadingStep}</p>
                 </div>
                 
+                {/* 裏コマンドモード時の追加演出 */}
+                {isSecretModeLoading && (
+                  <div className="text-center mb-3">
+                    <p className="text-purple-300/80 text-xs animate-pulse">
+                      ✨ あなたの運命を読み解いています ✨
+                    </p>
+                  </div>
+                )}
+                
                 {/* 経過時間と残り時間目安 */}
-                <div className="flex justify-between text-xs text-slate-500">
+                <div className={`flex justify-between text-xs ${
+                  isSecretModeLoading ? "text-purple-400/70" : "text-slate-500"
+                }`}>
                   <span>経過: {loadingElapsed}秒</span>
                   <span>
                     {(() => {
                       // 経過時間から残り時間を推定（30秒想定）
                       const estimatedTotal = 30;
                       const remaining = Math.max(0, estimatedTotal - loadingElapsed);
+                      if (isSecretModeLoading) {
+                        if (remaining > 20) return "占い師が集中しています...";
+                        if (remaining > 10) return "運命の糸を紡いでいます...";
+                        if (remaining > 5) return "まもなく鑑定完了...";
+                        return "結果が出てきます...";
+                      }
                       if (remaining > 20) return `残り約${Math.ceil(remaining / 5) * 5}秒`;
                       if (remaining > 10) return `残り約${remaining}秒`;
                       if (remaining > 5) return "まもなく完了";
@@ -1293,6 +1381,7 @@ export default function Home() {
             </>
           ) : (
           /* 通常モード: 診断結果UI */
+          <>
           <div ref={resultRef} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-2xl relative overflow-hidden mb-8 animate-scale-in text-slate-600">
             <div className="border-b border-slate-100 pb-8 mb-8 animate-fade-in-up">
               <div className="text-center mb-3">
@@ -1590,7 +1679,7 @@ export default function Home() {
           <button onClick={handleReset} className="block w-full text-center text-slate-500 text-sm hover:text-blue-400 font-bold py-4 transition-colors">
             🔄 別の物件を診断する
           </button>
-          </div>
+          </>
           )}
 
         </div>
