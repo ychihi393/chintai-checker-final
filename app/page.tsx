@@ -1407,7 +1407,60 @@ export default function Home() {
                 <FortuneResult result={result} />
               </div>
               
-              <div className="mt-8 text-center">
+              {/* 共有・LINE連携ボタン */}
+              <div className="grid grid-cols-2 gap-2 md:gap-4 mb-8 mt-8">
+                <button onClick={handleDownloadImage} className="col-span-2 py-3 rounded-xl font-bold bg-slate-700 text-white text-sm hover:bg-slate-600 flex items-center justify-center gap-2 shadow-md">
+                  <span>💾</span> 画像を保存
+                </button>
+                <button 
+                  onClick={handleShareX} 
+                  disabled={isCreatingShare}
+                  className="bg-black text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up"
+                >
+                  {isCreatingShare ? "⏳ 準備中..." : "Xでシェア"}
+                </button>
+                <button 
+                  onClick={handleShareLine} 
+                  disabled={isCreatingShare}
+                  className="bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#05b34c] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isCreatingShare ? "⏳" : "📱"} {isCreatingShare ? "準備中..." : "LINEでシェア"}
+                </button>
+                <button 
+                  onClick={handleCopyLink} 
+                  disabled={isCreatingShare}
+                  className="col-span-2 bg-slate-700 text-slate-200 font-bold text-sm py-3 rounded-xl hover:bg-slate-600 border border-slate-600 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCreatingShare ? "⏳ 準備中..." : isCopied ? "✨ コピーしました！" : "🔗 共有用リンクをコピー"}
+                </button>
+                {/* LINE連携ボタン */}
+                <button 
+                  onClick={handleLineLink} 
+                  disabled={isCreatingLineLink}
+                  className="col-span-2 bg-gradient-to-r from-[#06C755] to-[#05b34c] text-white py-4 rounded-xl font-black text-base shadow-lg hover:from-[#05b34c] hover:to-[#04a042] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all hover:scale-[1.02] relative overflow-hidden group"
+                  style={{
+                    boxShadow: '0 10px 30px rgba(6, 199, 85, 0.3)'
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      {isCreatingLineLink ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                          <path d="M12 2C6.48 2 2 5.56 2 10.1c0 2.45 1.3 4.63 3.4 6.1-.15.8-.5 2.15-.56 2.47-.05.24.1.47.34.47.1 0 .2-.03.27-.08.05-.03 2.6-1.73 3.63-2.45.62.17 1.28.26 1.95.26 5.52 0 10-3.56 10-8.1S17.52 2 12 2z"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span className="tracking-wide">
+                      {isCreatingLineLink ? "準備中..." : "LINEで続きを確認"}
+                    </span>
+                  </div>
+                </button>
+              </div>
+              
+              <div className="mt-4 text-center">
                 <button onClick={handleReset} className="text-purple-300 text-sm hover:text-purple-100 font-bold py-4 transition-colors">
                   🔄 もう一度占う
                 </button>
