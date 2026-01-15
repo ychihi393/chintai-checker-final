@@ -8,7 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { verifyAccessToken } from '@/lib/line-client';
+import { verifyAccessToken, createLineClient } from '@/lib/line-client';
 
 export const maxDuration = 30;
 
@@ -60,6 +60,18 @@ export async function POST(req: Request) {
 
     // 5. アクティブ案件に設定
     await setActiveCase(lineUserId, caseId);
+
+    // 6. Messaging APIを使って成功メッセージを送信
+    try {
+      const client = createLineClient();
+      await client.pushMessage(lineUserId, {
+        type: 'text',
+        text: '✅ 引き継ぎが完了しました！\n\n「履歴」と送信すると案件を確認できます。',
+      });
+    } catch (messageError: any) {
+      // メッセージ送信が失敗しても連携は成功しているので、エラーはログに記録するだけ
+      console.warn('Failed to send LINE message:', messageError);
+    }
 
     return NextResponse.json({
       success: true,
