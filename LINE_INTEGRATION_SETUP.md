@@ -268,7 +268,7 @@ x-line-signature: {signature}
 - [LINE Messaging API ドキュメント](https://developers.line.biz/ja/docs/messaging-api/)
 - [LIFF ドキュメント](https://developers.line.biz/ja/docs/liff/)
 - [Vercel KV ドキュメント](https://vercel.com/docs/storage/vercel-kv)
-- [友だち追加URL](https://lin.ee/DPUjEfr)
+- [友だち追加URL](https://lin.ee/UK6DCAl)
 
 ## サポート
 
