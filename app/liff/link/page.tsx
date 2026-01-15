@@ -35,14 +35,21 @@ export default function LiffLinkPage() {
       try {
         // 1. LIFF初期化
         const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+        console.log('LIFF ID:', liffId);
+        
         if (!liffId || liffId === 'your-liff-id-here') {
           throw new Error('LIFF IDが設定されていません');
         }
 
+        console.log('Initializing LIFF...');
         await window.liff.init({ liffId });
+        console.log('LIFF initialized successfully');
 
         // ログインチェック
-        if (!window.liff.isLoggedIn()) {
+        const isLoggedIn = window.liff.isLoggedIn();
+        console.log('Is logged in:', isLoggedIn);
+        
+        if (!isLoggedIn) {
           throw new Error('LINEにログインしていません');
         }
 
@@ -61,6 +68,7 @@ export default function LiffLinkPage() {
         }
 
         // 4. サーバーに送信
+        console.log('Sending request to /api/line/link...');
         const res = await fetch('/api/line/link', {
           method: 'POST',
           headers: {
@@ -70,11 +78,15 @@ export default function LiffLinkPage() {
           body: JSON.stringify({ caseToken }),
         });
 
+        console.log('Response status:', res.status);
         const data = await res.json();
+        console.log('Response data:', data);
 
         if (!res.ok) {
           throw new Error(data.error || 'サーバーエラー');
         }
+        
+        console.log('Link successful!');
 
         // 5. メッセージ送信はサーバー側で行われるため、ここでは何もしない
         // サーバー側（/api/line/link）でMessaging APIを使ってメッセージを送信
@@ -87,6 +99,12 @@ export default function LiffLinkPage() {
         }, 2000);
       } catch (error: any) {
         console.error('LIFF initialization error:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          cause: error.cause
+        });
         setStatus('error');
         setErrorMessage(error.message || 'エラーが発生しました');
       }
