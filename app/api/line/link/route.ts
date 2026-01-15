@@ -8,11 +8,14 @@
  */
 
 import { NextResponse } from 'next/server';
-import { consumeCaseToken, linkCaseToUser, setActiveCase } from '@/lib/kv';
 import { verifyAccessToken } from '@/lib/line-client';
+
+export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
+    // KV関数を動的インポート
+    const { consumeCaseToken, linkCaseToUser, setActiveCase } = await import('@/lib/kv');
     // 1. Authorization ヘッダーから accessToken を取得
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
