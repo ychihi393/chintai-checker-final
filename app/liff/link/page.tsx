@@ -88,6 +88,54 @@ export default function LiffLinkPage() {
     }
   };
 
+  // 友だち追加後の自動チェック用のuseEffect
+  useEffect(() => {
+    if (status !== 'need_friend_add' || !caseToken) return;
+
+    // ページがフォーカスされたとき（友だち追加から戻ってきたとき）に自動チェック
+    const checkFriendshipOnFocus = async () => {
+      if (!window.liff) return;
+
+      try {
+        console.log('Checking friendship status after friend add...');
+        const friendship = await window.liff.getFriendship();
+        console.log('Friendship status after check:', friendship);
+
+        if (friendship.friendFlag) {
+          // 友だち追加が確認できたら、自動的に連携処理を実行
+          console.log('Friend add confirmed! Auto-linking...');
+          await performLinking(caseToken);
+        }
+      } catch (error: any) {
+        console.warn('Failed to check friendship on focus:', error);
+      }
+    };
+
+    // ページが表示されたとき（visibilitychange）とフォーカスされたとき（focus）にチェック
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // 少し遅延を入れてからチェック（友だち追加処理が完了するのを待つ）
+        setTimeout(checkFriendshipOnFocus, 1000);
+      }
+    };
+
+    const handleFocus = () => {
+      // 少し遅延を入れてからチェック
+      setTimeout(checkFriendshipOnFocus, 1000);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // 初回チェック（既に友だち追加済みの場合）
+    setTimeout(checkFriendshipOnFocus, 2000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [status, caseToken]);
+
   useEffect(() => {
     async function initLiff() {
       try {
@@ -251,15 +299,9 @@ export default function LiffLinkPage() {
             </button>
 
             <p className="text-slate-400 text-xs mb-4">
-              友だち追加が完了したら、下のボタンを押してください
+              友だち追加が完了すると、<br />
+              自動的に診断結果を送信します
             </p>
-
-            <button
-              onClick={() => performLinking(caseToken)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all hover:scale-105 shadow-lg"
-            >
-              連携を続ける
-            </button>
           </>
         )}
 
