@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       },
     ];
 
-    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-pro";
+    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
 
     const classificationPrompt = `
 この画像を分析して、以下のどれに該当するか判定してください。
