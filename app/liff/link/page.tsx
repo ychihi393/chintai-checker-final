@@ -216,10 +216,13 @@ export default function LiffLinkPage() {
               公式アカウントを友だち追加する必要があります。
             </p>
 
-            <a
-              href="https://lin.ee/Hnl9hkO"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => {
+                window.liff.openWindow({
+                  url: 'https://lin.ee/Hnl9hkO',
+                  external: true
+                });
+              }}
               className="block w-full bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-bold py-3 px-6 rounded-xl mb-4 transition-all hover:scale-105 shadow-lg"
             >
               <span className="flex items-center justify-center gap-2">
@@ -228,7 +231,7 @@ export default function LiffLinkPage() {
                 </svg>
                 友だち追加する
               </span>
-            </a>
+            </button>
 
             <p className="text-slate-400 text-xs mb-4">
               友だち追加が完了したら、下のボタンを押してください

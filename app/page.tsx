@@ -488,10 +488,10 @@ const FortuneResult = ({ result }: { result: AnalysisResult }) => {
             <p className="text-green-300 text-sm mb-4">
               🏠 運命の物件を見つけに行きませんか？
             </p>
-            <a 
-              href={process.env.NEXT_PUBLIC_LINE_URL || "https://line.me/R/ti/p/@your_id"} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={process.env.NEXT_PUBLIC_LINE_URL || "https://lin.ee/Hnl9hkO"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-[#06C755] to-[#05b34c] text-white font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-all"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
