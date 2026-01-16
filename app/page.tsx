@@ -995,7 +995,8 @@ export default function Home() {
       if (id) url = typeof window !== 'undefined' ? `${window.location.origin}/share/${id}` : "";
     }
     if (url) {
-      navigator.clipboard.writeText(generateShareText() + url);
+      // URLだけをコピー（テキストは含めない）
+      navigator.clipboard.writeText(url);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     }
@@ -1091,21 +1092,9 @@ export default function Home() {
               その見積もり、<br className="md:hidden"/>
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 text-transparent bg-clip-text">本当に適正価格</span>ですか？
             </h2>
-            <p className="text-slate-400 text-xs md:text-sm mb-4">
+            <p className="text-slate-400 text-xs md:text-sm">
               AIが図面と見積もりを照合し、<br className="md:hidden"/>交渉可能な項目を洗い出します。
             </p>
-            {/* LINE登録ボタン（小さめ） */}
-            <a 
-              href={process.env.NEXT_PUBLIC_LINE_URL || "https://lin.ee/Hnl9hkO"} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-bold py-2 px-4 rounded-lg text-xs md:text-sm shadow-md hover:shadow-lg transition-all hover:scale-105"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M12 2C6.48 2 2 5.56 2 10.1c0 2.45 1.3 4.63 3.4 6.1-.15.8-.5 2.15-.56 2.47-.05.24.1.47.34.47.1 0 .2-.03.27-.08.05-.03 2.6-1.73 3.63-2.45.62.17 1.28.26 1.95.26 5.52 0 10-3.56 10-8.1S17.52 2 12 2z"/>
-              </svg>
-              <span>LINEで友だち追加</span>
-            </a>
           </div>
 
           {/* 撮影のコツ */}
@@ -1762,7 +1751,7 @@ export default function Home() {
                   </p>
                 </div>
                 <a 
-                  href={process.env.NEXT_PUBLIC_LINE_URL || "https://line.me/R/ti/p/@your_id"} 
+                  href={process.env.NEXT_PUBLIC_LINE_URL || "https://lin.ee/Hnl9hkO"} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="flex-shrink-0 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-black py-5 px-10 rounded-2xl shadow-2xl shadow-green-500/30 transition-all hover:scale-105 hover:shadow-green-500/50 flex items-center gap-3 text-lg relative overflow-hidden group"
