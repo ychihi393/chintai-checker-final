@@ -7,13 +7,12 @@
  */
 
 import { NextResponse } from 'next/server';
+import { createCase, createCaseToken } from '@/lib/kv';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    // KV関数を動的インポート
-    const { createCase, createCaseToken } = await import('@/lib/kv');
     const body = await req.json();
     const { result } = body;
 

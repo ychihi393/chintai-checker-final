@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { verifySignature } from '@/lib/line-signature';
 import { createLineClient } from '@/lib/line-client';
+import { getUserCases, setActiveCase, getActiveCase } from '@/lib/kv';
 import type { WebhookEvent, MessageEvent, TextEventMessage } from '@line/bot-sdk';
 
 // LINE WebhookはPOSTのみ受け付ける
@@ -31,9 +32,6 @@ export async function POST(req: Request) {
   console.log('Request URL:', req.url);
 
   try {
-    // KV関数を動的インポート
-    const { getUserCases, setActiveCase, getActiveCase } = await import('@/lib/kv');
-
     // 1. 署名検証
     const signature = req.headers.get('x-line-signature');
     const body = await req.text();
