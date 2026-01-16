@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       },
     ];
 
-    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-pro";
+    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-pro";
 
     const classificationPrompt = `
 この画像を分析して、以下のどれに該当するか判定してください。
@@ -57,10 +57,23 @@ JSON形式で出力してください:
       },
     });
 
-    const result = await model.generateContent(parts);
-    const responseText = result.response.text();
-    const cleanedText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const classification = JSON.parse(cleanedText);
+    console.log("分類API: モデル名:", primaryModel);
+    let classification;
+    try {
+      const result = await model.generateContent(parts);
+      const responseText = result.response.text();
+      console.log("分類API応答（最初の500文字）:", responseText.substring(0, 500));
+      const cleanedText = responseText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      classification = JSON.parse(cleanedText);
+    } catch (parseError: any) {
+      console.error("分類API JSON Parse Error:", parseError);
+      console.error("Parse Error Details:", {
+        message: parseError.message,
+        name: parseError.name,
+        stack: parseError.stack
+      });
+      throw new Error(`画像分類の解析に失敗しました: ${parseError.message}`);
+    }
 
     // 裏コマンド対象かどうかを判定
     const isSecretMode = classification.type !== "estimate" && classification.type !== "flyer";

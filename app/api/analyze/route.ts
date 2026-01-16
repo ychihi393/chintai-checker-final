@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-pro";
+    const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-1.5-pro";
     
     // ========================================
     // 【第1段階】画像の種類を判定
@@ -104,11 +104,23 @@ JSON形式で出力してください:
       }
     });
     
-    console.log("画像分類中...");
-    const classificationResult = await model.generateContent(classificationParts);
-    const classificationText = classificationResult.response.text();
-    const cleanedClassification = classificationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const classification = JSON.parse(cleanedClassification);
+    console.log("画像分類中... モデル:", primaryModel);
+    let classification;
+    try {
+      const classificationResult = await model.generateContent(classificationParts);
+      const classificationText = classificationResult.response.text();
+      console.log("分類API応答（最初の500文字）:", classificationText.substring(0, 500));
+      const cleanedClassification = classificationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      classification = JSON.parse(cleanedClassification);
+    } catch (classificationError: any) {
+      console.error("画像分類エラー:", classificationError);
+      console.error("エラー詳細:", {
+        message: classificationError.message,
+        stack: classificationError.stack,
+        name: classificationError.name
+      });
+      throw new Error(`画像分類に失敗しました: ${classificationError.message}`);
+    }
     
     console.log("画像分類結果:", classification);
 
@@ -547,11 +559,18 @@ JSON形式で出力:
     let json;
     try {
       const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      console.log("パース前のテキスト（最初の1000文字）:", cleanedText.substring(0, 1000));
       json = JSON.parse(cleanedText);
     } catch (parseError: any) {
       console.error("JSON Parse Error:", parseError);
-      console.error("Response text:", responseText.substring(0, 500));
-      throw new Error(`AIの応答の解析に失敗しました: ${parseError.message}`);
+      console.error("Parse Error Details:", {
+        message: parseError.message,
+        name: parseError.name,
+        stack: parseError.stack
+      });
+      console.error("Response text (full):", responseText);
+      console.error("Response text length:", responseText.length);
+      throw new Error(`AIの応答の解析に失敗しました: ${parseError.message}\n応答の最初の500文字: ${responseText.substring(0, 500)}`);
     }
     
     // 後処理
