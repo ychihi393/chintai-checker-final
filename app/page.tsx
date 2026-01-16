@@ -1030,14 +1030,15 @@ export default function Home() {
 
       const { caseId, caseToken } = await res.json();
 
-      // 2. LIFF URLへ遷移
+      // 2. LIFF URLへ遷移（diag_idとcaseTokenを含める）
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
       if (!liffId || liffId === 'your-liff-id-here') {
         alert('LIFF IDが設定されていません。管理者にお問い合わせください。');
         return;
       }
 
-      const liffUrl = `https://liff.line.me/${liffId}?state=${caseToken}`;
+      // diag_id（caseId）とcaseTokenの両方を含める
+      const liffUrl = `https://liff.line.me/${liffId}?state=${caseToken}&diag_id=${caseId}`;
       window.location.href = liffUrl;
     } catch (error) {
       console.error('LINE link creation error:', error);

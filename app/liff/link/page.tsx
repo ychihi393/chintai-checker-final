@@ -116,12 +116,18 @@ export default function LiffLinkPage() {
           throw new Error('LINEにログインしていません');
         }
 
-        // 2. URLからcaseToken取得
+        // 2. URLからcaseTokenとdiag_id取得
         const params = new URLSearchParams(window.location.search);
         const token = params.get('state');
+        const diagId = params.get('diag_id');
 
         if (!token) {
           throw new Error('リンク情報が見つかりません');
+        }
+
+        // diag_idが存在する場合はログに記録（デバッグ用）
+        if (diagId) {
+          console.log('diag_id received:', diagId);
         }
 
         setCaseToken(token);
