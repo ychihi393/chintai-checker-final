@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { verifyAccessToken, createLineClient } from '@/lib/line-client';
-import { consumeCaseToken, linkCaseToUser, setActiveCase } from '@/lib/kv';
+import { consumeCaseToken, linkCaseToUser, setActiveCase, getCase } from '@/lib/kv';
 
 export const maxDuration = 30;
 
@@ -60,13 +60,67 @@ export async function POST(req: Request) {
     // 5. アクティブ案件に設定
     await setActiveCase(lineUserId, caseId);
 
-    // 6. Messaging APIを使って成功メッセージを送信
+    // 6. 案件データを取得して診断結果の詳細メッセージを送信
     try {
+      const caseData = await getCase(caseId);
+      if (!caseData) {
+        throw new Error('Case data not found');
+      }
+
+      const result = caseData.result;
       const client = createLineClient();
-      await client.pushMessage(lineUserId, {
-        type: 'text',
-        text: '✅ 引き継ぎが完了しました！\n\n「履歴」と送信すると案件を確認できます。',
-      });
+
+      // 裏コマンド（占いモード）の場合
+      if (result.is_secret_mode) {
+        const message = `✨ ${result.fortune_title || 'スペシャル診断'}\n\n${result.fortune_summary || ''}\n\n「履歴」と送信すると、いつでも結果を確認できます。`;
+        await client.pushMessage(lineUserId, {
+          type: 'text',
+          text: message,
+        });
+      } else {
+        // 通常の診断結果
+        let message = `✅ 診断結果を引き継ぎました！\n\n`;
+        message += `【物件情報】\n`;
+        message += `${result.property_name || '物件名不明'}`;
+        if (result.room_number) {
+          message += ` ${result.room_number}`;
+        }
+        message += `\n\n`;
+        message += `【診断サマリー】\n`;
+        message += `見積書合計: ${result.total_original?.toLocaleString() || '0'}円\n`;
+        message += `適正価格: ${result.total_fair?.toLocaleString() || '0'}円\n`;
+        message += `💰 削減可能額: ${result.discount_amount?.toLocaleString() || '0'}円\n`;
+        message += `⚠️ リスクスコア: ${result.risk_score || 0}点\n\n`;
+
+        // 削減可能な項目を抽出
+        const cutItems = result.items?.filter((item: any) => item.status === 'cut') || [];
+        const negotiableItems = result.items?.filter((item: any) => item.status === 'negotiable') || [];
+
+        if (cutItems.length > 0) {
+          message += `【削減可能項目】\n`;
+          cutItems.forEach((item: any) => {
+            message += `❌ ${item.name}: ${item.price_original?.toLocaleString() || 0}円\n`;
+            message += `   → ${item.reason}\n`;
+          });
+          message += `\n`;
+        }
+
+        if (negotiableItems.length > 0) {
+          message += `【交渉推奨項目】\n`;
+          negotiableItems.forEach((item: any) => {
+            message += `⚡ ${item.name}: ${item.price_original?.toLocaleString() || 0}円\n`;
+            message += `   → ${item.reason}\n`;
+          });
+          message += `\n`;
+        }
+
+        message += `「履歴」と送信すると、いつでも詳細を確認できます。`;
+
+        await client.pushMessage(lineUserId, {
+          type: 'text',
+          text: message,
+        });
+      }
     } catch (messageError: any) {
       // メッセージ送信が失敗しても連携は成功しているので、エラーはログに記録するだけ
       console.warn('Failed to send LINE message:', messageError);
