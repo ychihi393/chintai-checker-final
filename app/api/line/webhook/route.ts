@@ -68,16 +68,36 @@ export async function POST(req: Request) {
         const userId = event.source.userId;
         if (!userId) continue;
 
+        console.log(`[Follow event] User ID: ${userId}`);
+
         // 以前の案件があるか確認
+        // まず、userCasesリストから取得を試みる
         const userCases = await getUserCases(userId, 1); // 最新1件を取得
+        console.log(`[Follow event] Found ${userCases.length} previous cases from getUserCases for user ${userId}`);
         
-        if (userCases.length > 0) {
+        // userCasesリストが空でも、アクティブ案件があるかもしれないので確認
+        let latestCase = userCases.length > 0 ? userCases[0] : null;
+        
+        if (!latestCase) {
+          // アクティブ案件を確認
+          const activeCase = await getActiveCase(userId);
+          if (activeCase) {
+            console.log(`[Follow event] Found active case: ${activeCase.case_id}`);
+            latestCase = activeCase;
+          }
+        }
+        
+        if (latestCase) {
+          console.log(`[Follow event] Latest case ID: ${latestCase.case_id}`);
           // 以前の案件がある場合 → 最新の案件の診断結果を自動送信
-          const latestCase = userCases[0];
           const result = latestCase.result;
           
-          // アクティブ案件に設定
-          await setActiveCase(userId, latestCase.case_id);
+          // アクティブ案件に設定（まだ設定されていない場合）
+          try {
+            await setActiveCase(userId, latestCase.case_id);
+          } catch (error: any) {
+            console.warn(`[Follow event] Failed to set active case: ${error.message}`);
+          }
           
           // 診断結果を送信
           if (result.is_secret_mode) {
@@ -165,9 +185,12 @@ export async function POST(req: Request) {
                 ],
               },
             });
+            
+            console.log(`[Follow event] Diagnosis result and property confirmation sent to user ${userId}`);
           }
         } else {
           // 以前の案件がない場合（新規ユーザー）
+          console.log(`[Follow event] No previous cases found for user ${userId}, sending welcome message`);
           await client.replyMessage(event.replyToken, {
             type: 'text',
             text: '友だち追加ありがとうございます！\n\n賃貸初期費用AI診断の結果をこちらで確認できます。\n\n診断ページで「LINEで続き」ボタンを押して連携してください。',
