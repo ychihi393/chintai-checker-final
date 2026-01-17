@@ -505,7 +505,6 @@ export async function POST(req: Request) {
         }
 
         // 相談状態の場合、メッセージを受け取って以後手動対応
-        const conversationState = await getConversationState(userId);
         if (conversationState && conversationState.step === 'consultation') {
           await setConversationState(userId, 'completed', conversationState.case_id);
           
