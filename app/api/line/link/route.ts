@@ -160,17 +160,17 @@ export async function POST(req: Request) {
               {
                 type: 'message',
                 label: 'はい',
-                text: `PROPERTY_CONFIRM_YES:${caseId}`,
+                text: 'はい',
               },
               {
                 type: 'message',
                 label: 'いいえ',
-                text: `PROPERTY_CONFIRM_NO:${caseId}`,
+                text: 'いいえ',
               },
               {
                 type: 'message',
                 label: '相談したい',
-                text: `PROPERTY_CONFIRM_CONSULT:${caseId}`,
+                text: '相談したい',
               },
             ],
           },
