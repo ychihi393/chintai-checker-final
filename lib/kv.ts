@@ -175,11 +175,15 @@ export async function getUserCases(lineUserId: string, limit: number = 5): Promi
   const userCasesKey = `userCases:${lineUserId}`;
   const userCasesData = await kv.get<{ case_ids: string[] }>(userCasesKey);
 
+  console.log(`[getUserCases] User: ${lineUserId}, Key: ${userCasesKey}, Found: ${!!userCasesData}`);
+
   if (!userCasesData) {
+    console.log(`[getUserCases] No userCases data found for ${lineUserId}`);
     return [];
   }
 
   const caseIds: string[] = userCasesData.case_ids || [];
+  console.log(`[getUserCases] Found ${caseIds.length} case IDs:`, caseIds.slice(0, 5));
 
   // limitまでの案件を取得
   const limitedIds = caseIds.slice(0, limit);
@@ -188,16 +192,24 @@ export async function getUserCases(lineUserId: string, limit: number = 5): Promi
   for (const caseId of limitedIds) {
     const caseData = await kv.get<CaseData>(`case:${caseId}`);
     if (caseData) {
+      console.log(`[getUserCases] Case ${caseId}: line_user_id=${caseData.line_user_id}, expires_at=${caseData.expires_at}`);
       // 自分の案件かつ有効期限内のもののみ
       if (caseData.line_user_id === lineUserId) {
         const expiresAt = new Date(caseData.expires_at);
-        if (expiresAt > new Date()) {
+        const isValid = expiresAt > new Date();
+        console.log(`[getUserCases] Case ${caseId}: isValid=${isValid}, expiresAt=${expiresAt.toISOString()}, now=${new Date().toISOString()}`);
+        if (isValid) {
           cases.push(caseData);
         }
+      } else {
+        console.log(`[getUserCases] Case ${caseId}: line_user_id mismatch (${caseData.line_user_id} !== ${lineUserId})`);
       }
+    } else {
+      console.log(`[getUserCases] Case ${caseId}: not found in KV`);
     }
   }
 
+  console.log(`[getUserCases] Returning ${cases.length} valid cases`);
   return cases;
 }
 
