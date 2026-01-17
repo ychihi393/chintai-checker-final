@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { verifyAccessToken, createLineClient } from '@/lib/line-client';
-import { consumeCaseToken, linkCaseToUser, setActiveCase, getCase } from '@/lib/kv';
+import { consumeCaseToken, linkCaseToUser, setActiveCase, getCase, setConversationState } from '@/lib/kv';
 
 export const maxDuration = 30;
 
@@ -138,6 +138,41 @@ export async function POST(req: Request) {
         await client.pushMessage(lineUserId, {
           type: 'text',
           text: message,
+        });
+
+        // 診断結果送信後、すぐに物件確認の質問を送信（通常診断の場合のみ）
+        const propertyName = result.property_name || '物件名不明';
+        const roomNumber = result.room_number || '';
+        const propertyDisplay = roomNumber ? `${propertyName} ${roomNumber}` : propertyName;
+
+        // 会話状態を保存
+        await setConversationState(lineUserId, 'property_confirm', caseId);
+
+        // ボタンテンプレートメッセージで物件確認の質問を送信
+        await client.pushMessage(lineUserId, {
+          type: 'template',
+          altText: '確認する物件はこの物件で合ってますか？',
+          template: {
+            type: 'buttons',
+            text: `確認する物件はこの物件で合ってますか？\n\n${propertyDisplay}`,
+            actions: [
+              {
+                type: 'postback',
+                label: 'はい',
+                data: `action=property_confirm&value=yes&caseId=${caseId}`,
+              },
+              {
+                type: 'postback',
+                label: 'いいえ',
+                data: `action=property_confirm&value=no&caseId=${caseId}`,
+              },
+              {
+                type: 'postback',
+                label: '相談したい',
+                data: `action=property_confirm&value=consult&caseId=${caseId}`,
+              },
+            ],
+          },
         });
       }
     } catch (messageError: any) {

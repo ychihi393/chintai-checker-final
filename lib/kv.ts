@@ -28,6 +28,13 @@ export interface ActiveCase {
   updated_at: string;
 }
 
+export interface ConversationState {
+  line_user_id: string;
+  step: 'property_confirm' | 'application_intent' | 'consultation' | 'waiting_images' | 'completed';
+  case_id: string;
+  updated_at: string;
+}
+
 /**
  * 案件を作成
  * @param result 診断結果
@@ -277,4 +284,42 @@ function formatDate(date: Date): string {
   const minutes = String(date.getMinutes()).padStart(2, '0');
 
   return `${year}/${month}/${day} ${hours}:${minutes}`;
+}
+
+/**
+ * 会話状態を保存
+ * @param lineUserId LINE User ID
+ * @param step 会話ステップ
+ * @param caseId 案件ID
+ */
+export async function setConversationState(
+  lineUserId: string,
+  step: ConversationState['step'],
+  caseId: string
+): Promise<void> {
+  const state: ConversationState = {
+    line_user_id: lineUserId,
+    step,
+    case_id: caseId,
+    updated_at: new Date().toISOString(),
+  };
+
+  await kv.set(`conversation:${lineUserId}`, state);
+}
+
+/**
+ * 会話状態を取得
+ * @param lineUserId LINE User ID
+ * @returns 会話状態（存在しない場合はnull）
+ */
+export async function getConversationState(lineUserId: string): Promise<ConversationState | null> {
+  return await kv.get<ConversationState>(`conversation:${lineUserId}`);
+}
+
+/**
+ * 会話状態をクリア
+ * @param lineUserId LINE User ID
+ */
+export async function clearConversationState(lineUserId: string): Promise<void> {
+  await kv.del(`conversation:${lineUserId}`);
 }

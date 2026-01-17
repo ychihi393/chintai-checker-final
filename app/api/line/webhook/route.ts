@@ -9,8 +9,8 @@
 import { NextResponse } from 'next/server';
 import { verifySignature } from '@/lib/line-signature';
 import { createLineClient } from '@/lib/line-client';
-import { getUserCases, setActiveCase, getActiveCase } from '@/lib/kv';
-import type { WebhookEvent, MessageEvent, TextEventMessage } from '@line/bot-sdk';
+import { getUserCases, setActiveCase, getActiveCase, getConversationState, setConversationState, getCase } from '@/lib/kv';
+import type { WebhookEvent, MessageEvent, TextEventMessage, PostbackEvent, ImageEventMessage } from '@line/bot-sdk';
 
 // LINE WebhookはPOSTのみ受け付ける
 export const dynamic = 'force-dynamic';
@@ -153,10 +153,50 @@ export async function POST(req: Request) {
           continue;
         }
 
+        // 相談状態の場合、メッセージを受け取って以後手動対応
+        const conversationState = await getConversationState(userId);
+        if (conversationState && conversationState.step === 'consultation') {
+          await setConversationState(userId, 'completed', conversationState.case_id);
+          
+          await client.replyMessage(event.replyToken, {
+            type: 'text',
+            text: '相談内容を承知しました。担当者より返信いたします。',
+          });
+          
+          // 相談内容をログに記録（手動対応用）
+          console.log(`[Manual action required] Consultation from user ${userId}, case ${conversationState.case_id}: ${messageText}`);
+          continue;
+        }
+
         // その他のメッセージ → ヘルプ
         await client.replyMessage(event.replyToken, {
           type: 'text',
           text: '【使い方】\n\n📋 「履歴」→ 案件一覧を表示\n🔢 番号（1-5）→ 案件を選択\n✅ 「はい」→ 選択した案件の詳細を表示\n\n診断ページで「LINEで続き」ボタンを押すと新しい案件を連携できます。',
+        });
+      }
+
+      // message イベント（画像メッセージ）
+      if (event.type === 'message' && event.message.type === 'image') {
+        const userId = event.source.userId;
+        if (!userId) continue;
+
+        const conversationState = await getConversationState(userId);
+        if (conversationState && conversationState.step === 'waiting_images') {
+          // 画像受信を確認（通知のみ）
+          await client.replyMessage(event.replyToken, {
+            type: 'text',
+            text: '画像を確認しました。担当者より診断結果をご連絡いたします。',
+          });
+          
+          // 画像受信をログに記録（手動対応用）
+          console.log(`[Manual action required] Image received from user ${userId}, case ${conversationState.case_id}`);
+          continue;
+        }
+
+        // 画像が送信されたが、待機状態でない場合
+        await client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: '画像を受信しました。診断ページから「LINEで続き」ボタンを押して連携してください。',
         });
       }
     }
