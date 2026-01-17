@@ -193,6 +193,7 @@ export async function POST(req: Request) {
                       height: 'sm',
                       action: {
                         type: 'message',
+                        label: 'はい',
                         text: 'はい',
                       },
                       flex: 1,
@@ -204,6 +205,7 @@ export async function POST(req: Request) {
                       height: 'sm',
                       action: {
                         type: 'message',
+                        label: 'いいえ',
                         text: 'いいえ',
                       },
                       flex: 1,
@@ -217,6 +219,7 @@ export async function POST(req: Request) {
                   height: 'sm',
                   action: {
                     type: 'message',
+                    label: '相談したい',
                     text: '相談したい',
                   },
                   margin: 'md',
