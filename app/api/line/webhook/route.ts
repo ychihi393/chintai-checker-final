@@ -204,6 +204,7 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
+                            label: 'はい',
                             text: 'はい',
                           },
                           flex: 1,
@@ -215,6 +216,7 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
+                            label: 'いいえ',
                             text: 'いいえ',
                           },
                           flex: 1,
@@ -545,7 +547,7 @@ export async function POST(req: Request) {
           });
           
           // 画像受信をログに記録（手動対応用）
-          console.log(`[Manual action required] Image received from user ${userId}, case ${conversationState.case_id}`);
+          console.log(`[Manual action required] Image received from user ${userId}, case ${imageConversationState.case_id}`);
           continue;
         }
 
