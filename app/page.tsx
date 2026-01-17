@@ -1633,22 +1633,6 @@ export default function Home() {
                 </span>
               </div>
             </button>
-            {/* LINE友だち追加案内 */}
-            <div className="col-span-2 bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-xs text-green-300">
-              <p className="font-bold mb-1">💡 まだLINE Botを追加していない方へ</p>
-              <p className="text-green-400 mb-2">上記のボタンを押す前に、まず公式LINE Botを友だち追加してください。</p>
-              <a
-                href="https://lin.ee/Hnl9hkO"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-green-400 hover:text-green-300 font-bold underline"
-              >
-                <span>友だち追加はこちら</span>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
             {shareId && (
               <div className="col-span-2 bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-300">
                 <p className="font-bold mb-1">共有リンクが作成されました</p>
@@ -1751,24 +1735,6 @@ export default function Home() {
                     最安値プランをご提案
                   </p>
                 </div>
-                <a 
-                  href={process.env.NEXT_PUBLIC_LINE_URL || "https://lin.ee/Hnl9hkO"} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex-shrink-0 bg-gradient-to-r from-[#06C755] to-[#05b34c] hover:from-[#05b34c] hover:to-[#04a042] text-white font-black py-5 px-10 rounded-2xl shadow-2xl shadow-green-500/30 transition-all hover:scale-105 hover:shadow-green-500/50 flex items-center gap-3 text-lg relative overflow-hidden group"
-                  style={{
-                    boxShadow: '0 10px 30px rgba(6, 199, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  <div className="relative z-10 w-8 h-8 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-white/20 rounded-full blur-sm"></div>
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 relative z-10 drop-shadow-lg" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
-                      <path d="M12 2C6.48 2 2 5.56 2 10.1c0 2.45 1.3 4.63 3.4 6.1-.15.8-.5 2.15-.56 2.47-.05.24.1.47.34.47.1 0 .2-.03.27-.08.05-.03 2.6-1.73 3.63-2.45.62.17 1.28.26 1.95.26 5.52 0 10-3.56 10-8.1S17.52 2 12 2z"/>
-                    </svg>
-                  </div>
-                  <span className="relative z-10 tracking-wide">詳細を今すぐ確認</span>
-                </a>
              </div>
              <div className="relative z-10 mt-6 pt-6 border-t border-slate-700">
                 <div className="flex flex-wrap gap-2 md:gap-4 text-[10px] md:text-sm justify-center md:justify-start">
