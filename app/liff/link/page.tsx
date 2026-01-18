@@ -156,11 +156,14 @@ export default function LiffLinkPage() {
           throw new Error(`LIFF初期化エラー: ${initError.message || '不明なエラー'}`);
         }
 
-        // ログインチェック
+        // ログインチェック（iOS対応: 初期化直後はfalseを返すことがあるため、accessTokenで判定）
         const isLoggedIn = window.liff.isLoggedIn();
+        const accessTokenCheck = window.liff.getAccessToken();
         console.log('Is logged in:', isLoggedIn);
+        console.log('Access token exists:', !!accessTokenCheck);
 
-        if (!isLoggedIn) {
+        // iOS対応: isLoggedInがfalseでもaccessTokenがあればログイン済みとみなす
+        if (!isLoggedIn && !accessTokenCheck) {
           throw new Error('LINEにログインしていません');
         }
 

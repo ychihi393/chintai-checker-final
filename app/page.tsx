@@ -1202,13 +1202,13 @@ export default function Home() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2 px-1 md:px-2 py-2 flex-1">
-                      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0 flex-wrap">
                       <img 
                         src="/plan-icon.png" 
                           alt="図面" 
                           className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-md flex-shrink-0"
                         />
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 min-w-0">
                           <p className="text-slate-300 text-[10px] font-bold whitespace-nowrap">図面全体</p>
                           <p className="text-slate-500 text-[9px] whitespace-nowrap">物件情報図面</p>
                         </div>
@@ -1255,10 +1255,10 @@ export default function Home() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between gap-2 px-1 md:px-2 py-2 flex-1">
-                      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+                    <div className="flex items-center justify-between gap-2 px-1 md:px-2 py-2 flex-1 flex-wrap">
+                      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0 flex-wrap min-w-0">
                         <span className="text-xl md:text-2xl flex-shrink-0">🔍</span>
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 min-w-0">
                           <p className="text-slate-300 text-[10px] font-bold whitespace-nowrap">条件欄拡大撮影</p>
                           <p className="text-slate-500 text-[9px] whitespace-nowrap">家賃・敷金等拡大</p>
                         </div>
@@ -1415,20 +1415,6 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-2 md:gap-4 mb-8 mt-8">
                 <button onClick={handleDownloadImage} className="col-span-2 py-3 rounded-xl font-bold bg-slate-700 text-white text-sm hover:bg-slate-600 flex items-center justify-center gap-2 shadow-md">
                   <span>💾</span> 画像を保存
-                </button>
-                <button 
-                  onClick={handleShareX} 
-                  disabled={isCreatingShare}
-                  className="bg-black text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up"
-                >
-                  {isCreatingShare ? "⏳ 準備中..." : "Xでシェア"}
-                </button>
-                <button 
-                  onClick={handleShareLine} 
-                  disabled={isCreatingShare}
-                  className="bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#05b34c] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isCreatingShare ? "⏳" : "📱"} {isCreatingShare ? "準備中..." : "LINEで友達にシェア"}
                 </button>
                 <button 
                   onClick={handleCopyLink} 
@@ -1588,20 +1574,6 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-2 md:gap-4 mb-8">
             <button onClick={handleDownloadImage} className="col-span-2 py-3 rounded-xl font-bold bg-slate-700 text-white text-sm hover:bg-slate-600 flex items-center justify-center gap-2 shadow-md">
               <span>💾</span> 画像を保存
-            </button>
-            <button 
-              onClick={handleShareX} 
-              disabled={isCreatingShare}
-              className="bg-black text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-in-up"
-            >
-              {isCreatingShare ? "⏳ 準備中..." : "Xでシェア"}
-            </button>
-            <button 
-              onClick={handleShareLine} 
-              disabled={isCreatingShare}
-              className="bg-[#06C755] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#05b34c] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isCreatingShare ? "⏳" : "📱"} {isCreatingShare ? "準備中..." : "LINEで友達にシェア"}
             </button>
             <button 
               onClick={handleCopyLink} 
