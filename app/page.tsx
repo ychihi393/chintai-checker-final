@@ -864,14 +864,30 @@ export default function Home() {
         console.log("分類スキップ（通常モードで続行）:", classifyError);
       }
 
+      console.log("📤 APIリクエスト送信開始...");
       const res = await fetch("/api/analyze", { method: "POST", body: formData });
+      console.log("📥 APIレスポンス受信:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok
+      });
+      
       if (!res.ok) {
          let errorData: Record<string, string> = {};
          try {
            errorData = await res.json();
-         } catch {
+           console.error("❌ APIエラーレスポンス:", errorData);
+         } catch (parseError) {
+           console.error("❌ エラーレスポンスのパースに失敗:", parseError);
+           const errorText = await res.text();
+           console.error("❌ レスポンス本文:", errorText.substring(0, 500));
            errorData = { error: `サーバーエラー（ステータス: ${res.status}）` };
          }
+         
+         console.error("❌ ========== フロントエンドエラー ==========");
+         console.error("ステータスコード:", res.status);
+         console.error("エラーデータ:", errorData);
+         console.error("===========================================");
          
          if (res.status === 429) {
            const rateLimitMessage = errorData.details || errorData.error || "APIレート制限に達しました。しばらく時間をおいてから再度お試しください。";
@@ -908,6 +924,15 @@ export default function Home() {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (elapsedTimerRef.current) clearTimeout(elapsedTimerRef.current);
       cleanupMessageTimer();
+      
+      console.error("❌ ========== フロントエンドキャッチエラー ==========");
+      console.error("エラータイプ:", error?.constructor?.name || typeof error);
+      console.error("エラーメッセージ:", error instanceof Error ? error.message : String(error));
+      if (error instanceof Error) {
+        console.error("エラースタック:", error.stack);
+      }
+      console.error("================================================");
+      
       const errorMsg = error instanceof Error ? error.message : "解析に失敗しました。";
       setErrorMessage(errorMsg);
       setIsLoading(false);
@@ -1063,21 +1088,6 @@ export default function Home() {
           backgroundSize: '50px 50px'
         }}></div>
       </div>
-      
-      <header className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex justify-center items-center">
-          <button
-            onClick={() => {
-              setCurrentView("top");
-              handleReset();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="text-lg md:text-xl font-black text-white tracking-tight hover:text-blue-400 transition-colors cursor-pointer"
-          >
-            賃貸初期費用<span className="text-yellow-400 font-extrabold">AI</span><span className="text-blue-400">診断</span>
-          </button>
-        </div>
-      </header>
 
       {/* カメラUI */}
       <CameraCapture
@@ -1091,9 +1101,8 @@ export default function Home() {
       {currentView === "top" && (
         <div className="max-w-3xl mx-auto p-6 md:p-10 animate-fade-in">
           <div className="text-center mb-10 mt-4">
-            <h2 className="text-xl md:text-4xl font-extrabold text-white mb-3 md:mb-4 leading-tight">
-              その見積もり、<br className="md:hidden"/>
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 text-transparent bg-clip-text">本当に適正価格</span>ですか？
+            <h2 className="text-4xl md:text-7xl font-extrabold text-white mb-3 md:mb-4 leading-tight">
+              賃貸初期費用<span className="text-yellow-400 font-extrabold">AI</span><span className="text-blue-400">診断</span>
             </h2>
             <p className="text-slate-400 text-xs md:text-sm">
               AIが図面と見積もりを照合し、<br className="md:hidden"/>交渉可能な項目を洗い出します。
@@ -1115,7 +1124,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 2カラムレイアウト: 左=見積書, 右=図面＆条件欄 */}
+          {/* 2カラムレイアウト: 左=見積書, 右=図面 */}
           <div className="grid grid-cols-2 gap-2 md:gap-4 mb-8">
             {/* 左カラム: 見積書 */}
             <div className="flex flex-col">
@@ -1152,13 +1161,13 @@ export default function Home() {
                     <div className="flex gap-2 justify-center flex-wrap">
                       <button
                         onClick={() => openCamera("estimate")}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 md:px-4 py-2 md:py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs md:text-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-sm min-h-[44px] touch-manipulation"
                       >
                         <span>📷</span> 撮影
                       </button>
                       <button
                         onClick={() => estimateInputRef.current?.click()}
-                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 md:px-4 py-2 md:py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs md:text-sm"
+                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-sm min-h-[44px] touch-manipulation"
                       >
                         <span>🖼️</span> 選択
                       </button>
@@ -1175,7 +1184,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 右カラム: 募集図面＆条件欄（縦並び） */}
+            {/* 右カラム: 募集図面 */}
             <div className="flex flex-col">
               <div className="flex items-center gap-1 md:gap-2 mb-2 md:mb-3">
                 <span className="bg-emerald-500/80 text-white text-[9px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">推奨</span>
@@ -1183,114 +1192,54 @@ export default function Home() {
                 <span className="text-slate-500 text-[9px] md:text-xs">精度UP</span>
               </div>
               
-              <div className="flex flex-col gap-3 flex-1">
-                {/* 募集図面（全体） */}
-                <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-2 md:p-3 relative overflow-hidden hover:border-emerald-500/50 transition-all flex-1 min-h-[130px] flex flex-col">
+              <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-2xl p-4 md:p-6 relative overflow-hidden hover:border-blue-500/50 transition-all group flex-1 min-h-[280px] flex flex-col">
                 {planPreview ? (
-                    <div className="relative flex-1 flex items-center justify-center py-2">
-                      <img src={planPreview} className="w-full h-full max-h-[110px] object-contain rounded-lg" alt="募集図面プレビュー" />
-                      <button
-                        onClick={() => {
-                          if (planPreview) URL.revokeObjectURL(planPreview);
-                          setPlanFile(null);
-                          setPlanPreview(null);
-                        }}
-                        className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 text-xs z-10"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 px-1 md:px-2 py-2 flex-1 flex-wrap">
-                      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-0">
+                  <div className="relative flex-1 flex items-center justify-center py-4">
+                    <img src={planPreview} className="w-full h-full max-h-[250px] object-contain rounded-lg" alt="募集図面プレビュー" />
+                    <button
+                      onClick={() => {
+                        if (planPreview) URL.revokeObjectURL(planPreview);
+                        setPlanFile(null);
+                        setPlanPreview(null);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center hover:bg-red-600 text-sm z-10"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 md:py-6 flex flex-col justify-center flex-1">
+                    <div className="mb-3 md:mb-4 flex justify-center">
                       <img 
                         src="/plan-icon.png" 
-                          alt="図面" 
-                          className="w-12 h-12 md:w-16 md:h-16 object-contain drop-shadow-md flex-shrink-0"
-                        />
-                        <div className="flex-shrink-0 min-w-0">
-                          <p className="text-slate-300 text-xs md:text-sm font-bold whitespace-nowrap">図面全体</p>
-                          <p className="text-slate-500 text-[10px] md:text-xs whitespace-nowrap">物件情報図面</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 md:gap-3 flex-shrink-0 w-full md:w-auto justify-center md:justify-end mt-2 md:mt-0">
-                        <button
-                          onClick={() => openCamera("plan")}
-                          className="bg-emerald-600/80 hover:bg-emerald-600 text-white font-bold px-4 md:px-5 py-2.5 md:py-3 rounded-xl flex items-center gap-2 text-sm md:text-base transition-all min-h-[44px] touch-manipulation"
-                        >
-                          <span className="text-lg md:text-xl">📷</span>
-                          <span>撮影</span>
-                        </button>
-                        <button
-                          onClick={() => planInputRef.current?.click()}
-                          className="bg-slate-700/80 hover:bg-slate-600 text-white font-bold px-4 md:px-5 py-2.5 md:py-3 rounded-xl flex items-center gap-2 text-sm md:text-base transition-all min-h-[44px] touch-manipulation"
-                        >
-                          <span className="text-lg md:text-xl">🖼️</span>
-                          <span>選択</span>
-                        </button>
-                      </div>
-                      <input
-                        ref={planInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleInputChange(e, "plan")}
-                        className="hidden"
+                        alt="図面" 
+                        className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md"
                       />
                     </div>
-                  )}
-                </div>
-
-                {/* 条件欄アップ */}
-                <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-xl p-2 md:p-3 relative overflow-hidden hover:border-emerald-500/50 transition-all flex-1 min-h-[130px] flex flex-col">
-                  {conditionPreview ? (
-                    <div className="relative flex-1 flex items-center justify-center py-2">
-                      <img src={conditionPreview} className="w-full h-full max-h-[110px] object-contain rounded-lg" alt="条件欄プレビュー" />
+                    <p className="text-slate-400 text-xs md:text-sm mb-3 md:mb-4">図面の画像</p>
+                    <div className="flex gap-2 justify-center flex-wrap">
                       <button
-                        onClick={() => {
-                          if (conditionPreview) URL.revokeObjectURL(conditionPreview);
-                          setConditionFile(null);
-                          setConditionPreview(null);
-                        }}
-                        className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 text-xs z-10"
+                        onClick={() => openCamera("plan")}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-sm min-h-[44px] touch-manipulation"
                       >
-                        ✕
+                        <span>📷</span> 撮影
+                      </button>
+                      <button
+                        onClick={() => planInputRef.current?.click()}
+                        className="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all text-sm min-h-[44px] touch-manipulation"
+                      >
+                        <span>🖼️</span> 選択
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 px-1 md:px-2 py-2 flex-1 flex-wrap">
-                      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-0">
-                        <span className="text-3xl md:text-4xl flex-shrink-0">🔍</span>
-                        <div className="flex-shrink-0 min-w-0">
-                          <p className="text-slate-300 text-xs md:text-sm font-bold whitespace-nowrap">条件欄拡大撮影</p>
-                          <p className="text-slate-500 text-[10px] md:text-xs whitespace-nowrap">家賃・敷金等拡大</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 md:gap-3 flex-shrink-0 w-full md:w-auto justify-center md:justify-end mt-2 md:mt-0">
-                        <button
-                          onClick={() => openCamera("condition")}
-                          className="bg-emerald-600/80 hover:bg-emerald-600 text-white font-bold px-4 md:px-5 py-2.5 md:py-3 rounded-xl flex items-center gap-2 text-sm md:text-base transition-all min-h-[44px] touch-manipulation"
-                        >
-                          <span className="text-lg md:text-xl">📷</span>
-                          <span>撮影</span>
-                        </button>
-                        <button
-                          onClick={() => conditionInputRef.current?.click()}
-                          className="bg-slate-700/80 hover:bg-slate-600 text-white font-bold px-4 md:px-5 py-2.5 md:py-3 rounded-xl flex items-center gap-2 text-sm md:text-base transition-all min-h-[44px] touch-manipulation"
-                        >
-                          <span className="text-lg md:text-xl">🖼️</span>
-                          <span>選択</span>
-                        </button>
-                      </div>
-                      <input
-                        ref={conditionInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleInputChange(e, "condition")}
-                        className="hidden"
-                      />
-                    </div>
+                    <input
+                      ref={planInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleInputChange(e, "plan")}
+                      className="hidden"
+                    />
+                  </div>
                 )}
-              </div>
               </div>
             </div>
           </div>

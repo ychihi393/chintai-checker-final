@@ -11,10 +11,27 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// APIキーの確認
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("❌ GEMINI_API_KEY が環境変数に設定されていません");
+  console.error("環境変数の確認方法:");
+  console.error("1. .env.local ファイルに GEMINI_API_KEY=your_key_here を追加");
+  console.error("2. Vercelの場合は環境変数設定で GEMINI_API_KEY を追加");
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    // APIキーの再確認（リクエスト時）
+    if (!GEMINI_API_KEY) {
+      console.error("❌ APIリクエスト時: GEMINI_API_KEY が未設定");
+      return NextResponse.json({ 
+        error: "APIキーが設定されていません", 
+        details: "サーバー管理者にお問い合わせください。GEMINI_API_KEY が環境変数に設定されているか確認してください。" 
+      }, { status: 500 });
+    }
     const formData = await req.formData();
     const estimateFile = formData.get("estimate") as File | null;
     const planFile = formData.get("plan") as File | null;
@@ -72,6 +89,13 @@ export async function POST(req: Request) {
 
     const primaryModel = process.env.GEMINI_MODEL_NAME || "gemini-2.5-pro";
     
+    console.log("🔧 設定確認:");
+    console.log("  - 使用モデル:", primaryModel);
+    console.log("  - APIキー設定:", GEMINI_API_KEY ? `✅ 設定済み (${GEMINI_API_KEY.substring(0, 10)}...)` : "❌ 未設定");
+    console.log("  - 見積書ファイル:", estimateFile ? `✅ ${estimateFile.name} (${estimateFile.size} bytes)` : "❌ なし");
+    console.log("  - 図面ファイル:", planFile ? `✅ ${planFile.name} (${planFile.size} bytes)` : "なし");
+    console.log("  - 条件欄ファイル:", conditionFile ? `✅ ${conditionFile.name} (${conditionFile.size} bytes)` : "なし");
+    
     // ========================================
     // 【第1段階】画像の種類を判定
     // ========================================
@@ -104,21 +128,32 @@ JSON形式で出力してください:
       }
     });
     
-    console.log("画像分類中... モデル:", primaryModel);
+    console.log("🔍 画像分類開始... モデル:", primaryModel);
     let classification;
     try {
       const classificationResult = await model.generateContent(classificationParts);
       const classificationText = classificationResult.response.text();
-      console.log("分類API応答（最初の500文字）:", classificationText.substring(0, 500));
+      console.log("✅ 分類API応答受信（最初の500文字）:", classificationText.substring(0, 500));
       const cleanedClassification = classificationText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       classification = JSON.parse(cleanedClassification);
+      console.log("✅ 画像分類成功:", classification);
     } catch (classificationError: any) {
-      console.error("画像分類エラー:", classificationError);
-      console.error("エラー詳細:", {
-        message: classificationError.message,
-        stack: classificationError.stack,
-        name: classificationError.name
-      });
+      console.error("❌ ========== 画像分類エラー ==========");
+      console.error("エラータイプ:", classificationError?.constructor?.name || typeof classificationError);
+      console.error("エラーメッセージ:", classificationError?.message || "メッセージなし");
+      console.error("エラースタック:", classificationError?.stack || "スタックなし");
+      
+      // APIキー関連のエラーをチェック
+      if (classificationError?.message?.includes("API_KEY") || 
+          classificationError?.message?.includes("api key") || 
+          classificationError?.message?.includes("API key") ||
+          classificationError?.message?.includes("401") ||
+          classificationError?.message?.includes("403")) {
+        console.error("⚠️ APIキー関連のエラーの可能性が高いです");
+        console.error("GEMINI_API_KEY の設定を確認してください");
+      }
+      
+      console.error("=====================================");
       throw new Error(`画像分類に失敗しました: ${classificationError.message}`);
     }
     
@@ -439,10 +474,10 @@ JSON形式で出力:
       });
       
       try {
-        console.log("裏コマンド診断開始... タイプ:", classification.type);
+        console.log("🔮 裏コマンド診断開始... タイプ:", classification.type);
         const secretResult = await secretModel.generateContent(secretParts);
         const secretText = secretResult.response.text();
-        console.log("裏コマンドAI応答:", secretText.substring(0, 500));
+        console.log("✅ 裏コマンドAI応答受信（最初の500文字）:", secretText.substring(0, 500));
         
         const cleanedSecret = secretText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         const secretJson = JSON.parse(cleanedSecret);
@@ -453,10 +488,25 @@ JSON形式で出力:
         secretJson.has_unconfirmed_items = false;
         secretJson.unconfirmed_item_names = [];
         
-        console.log("裏コマンド診断完了！");
+        console.log("✅ 裏コマンド診断完了！");
         return NextResponse.json({ result: secretJson });
       } catch (secretError: any) {
-        console.error("裏コマンドエラー:", secretError);
+        console.error("❌ ========== 裏コマンドエラー ==========");
+        console.error("エラータイプ:", secretError?.constructor?.name || typeof secretError);
+        console.error("エラーメッセージ:", secretError?.message || "メッセージなし");
+        console.error("エラースタック:", secretError?.stack || "スタックなし");
+        
+        // APIキー関連のエラーをチェック
+        if (secretError?.message?.includes("API_KEY") || 
+            secretError?.message?.includes("api key") || 
+            secretError?.message?.includes("API key") ||
+            secretError?.message?.includes("401") ||
+            secretError?.message?.includes("403")) {
+          console.error("⚠️ APIキー関連のエラーの可能性が高いです");
+          console.error("GEMINI_API_KEY の設定を確認してください");
+        }
+        
+        console.error("=====================================");
         throw new Error(`裏コマンド処理エラー: ${secretError.message}`);
       }
     }
@@ -551,25 +601,48 @@ JSON形式で出力:
 
     parts.push({ text: prompt });
     
-    const result = await model.generateContent(parts);
-    const responseText = result.response.text();
-    console.log("AI応答を受信しました");
+    console.log("🤖 通常診断モード: AIリクエスト送信...");
+    let result;
+    let responseText;
+    try {
+      result = await model.generateContent(parts);
+      responseText = result.response.text();
+      console.log("✅ AI応答を受信しました（長さ:", responseText.length, "文字）");
+    } catch (generateError: any) {
+      console.error("❌ ========== AI生成エラー ==========");
+      console.error("エラータイプ:", generateError?.constructor?.name || typeof generateError);
+      console.error("エラーメッセージ:", generateError?.message || "メッセージなし");
+      console.error("エラースタック:", generateError?.stack || "スタックなし");
+      
+      // APIキー関連のエラーをチェック
+      if (generateError?.message?.includes("API_KEY") || 
+          generateError?.message?.includes("api key") || 
+          generateError?.message?.includes("API key") ||
+          generateError?.message?.includes("401") ||
+          generateError?.message?.includes("403")) {
+        console.error("⚠️ APIキー関連のエラーの可能性が高いです");
+        console.error("GEMINI_API_KEY の設定を確認してください");
+      }
+      
+      console.error("=====================================");
+      throw generateError;
+    }
     
     // JSONパース
     let json;
     try {
       const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      console.log("パース前のテキスト（最初の1000文字）:", cleanedText.substring(0, 1000));
+      console.log("📝 パース前のテキスト（最初の1000文字）:", cleanedText.substring(0, 1000));
       json = JSON.parse(cleanedText);
+      console.log("✅ JSONパース成功");
     } catch (parseError: any) {
-      console.error("JSON Parse Error:", parseError);
-      console.error("Parse Error Details:", {
-        message: parseError.message,
-        name: parseError.name,
-        stack: parseError.stack
-      });
-      console.error("Response text (full):", responseText);
-      console.error("Response text length:", responseText.length);
+      console.error("❌ ========== JSON Parse Error ==========");
+      console.error("エラーメッセージ:", parseError.message);
+      console.error("エラースタック:", parseError.stack);
+      console.error("レスポンス全文の長さ:", responseText.length);
+      console.error("レスポンス全文（最初の2000文字）:", responseText.substring(0, 2000));
+      console.error("レスポンス全文（最後の500文字）:", responseText.substring(Math.max(0, responseText.length - 500)));
+      console.error("=========================================");
       throw new Error(`AIの応答の解析に失敗しました: ${parseError.message}\n応答の最初の500文字: ${responseText.substring(0, 500)}`);
     }
     
@@ -606,7 +679,22 @@ JSON形式で出力:
     return NextResponse.json({ result: json });
 
   } catch (error: any) {
-    console.error("Server Error:", error);
+    console.error("❌ ========== サーバーエラー ==========");
+    console.error("エラータイプ:", error?.constructor?.name || typeof error);
+    console.error("エラーメッセージ:", error?.message || "メッセージなし");
+    console.error("エラーステータス:", error?.status || "ステータスなし");
+    console.error("エラースタック:", error?.stack || "スタックなし");
+    
+    // APIキー関連のエラーをチェック
+    if (error?.message?.includes("API_KEY") || error?.message?.includes("api key") || error?.message?.includes("API key")) {
+      console.error("⚠️ APIキー関連のエラーの可能性があります");
+      console.error("GEMINI_API_KEY の設定を確認してください");
+    }
+    
+    // Gemini APIのエラーをチェック
+    if (error?.message?.includes("429") || error?.status === 429) {
+      console.error("⚠️ APIレート制限に達しました");
+    }
     
     let errorMessage = "解析エラーが発生しました";
     let errorDetails = error.message || "不明なエラー";
@@ -617,7 +705,13 @@ JSON形式で出力:
     } else if (error.message?.includes("JSON")) {
       errorMessage = "AIからの応答の解析に失敗しました";
       errorDetails = "もう一度お試しください。";
+    } else if (error.message?.includes("API_KEY") || error.message?.includes("api key")) {
+      errorMessage = "APIキーが正しく設定されていません";
+      errorDetails = "サーバー管理者にお問い合わせください。";
     }
+    
+    console.error("返却するエラーレスポンス:", { error: errorMessage, details: errorDetails, status: error.status || 500 });
+    console.error("=====================================");
     
     return NextResponse.json({ 
       error: errorMessage, 
