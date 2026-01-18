@@ -270,15 +270,19 @@ export async function POST(req: Request) {
         if (!userId) continue;
 
         const messageText = event.message.text.trim();
+        console.log(`[Message received] User: ${userId}, Text: "${messageText}"`);
 
         // 会話状態を確認して、ボタンからの日本語メッセージを処理
         const conversationState = await getConversationState(userId);
+        console.log(`[Conversation state] User: ${userId}, State:`, conversationState);
 
         // property_confirmステップの場合
         if (conversationState && conversationState.step === 'property_confirm') {
+          console.log(`[property_confirm] Processing message: "${messageText}"`);
           const caseId = conversationState.case_id;
 
           if (messageText === 'はい') {
+            console.log('[property_confirm] User selected "はい" - moving to application_intent');
             // 「はい」が選択された場合 → 申し込み希望を聞く
             await setConversationState(userId, 'application_intent', caseId);
             
@@ -390,9 +394,11 @@ export async function POST(req: Request) {
 
         // application_intentステップの場合
         if (conversationState && conversationState.step === 'application_intent') {
+          console.log(`[application_intent] Processing message: "${messageText}"`);
           const caseId = conversationState.case_id;
 
           if (messageText === '申し込みする') {
+            console.log('[application_intent] User selected "申し込みする"');
             // 「申し込みする」が選択された場合 → 以後手動対応
             await setConversationState(userId, 'completed', caseId);
             
@@ -516,14 +522,25 @@ export async function POST(req: Request) {
         // 相談状態の場合、メッセージを受け取って以後手動対応
         if (conversationState && conversationState.step === 'consultation') {
           await setConversationState(userId, 'completed', conversationState.case_id);
-          
+
           await client.replyMessage(event.replyToken, {
             type: 'text',
             text: '相談内容を承知しました。担当者より返信いたします。',
           });
-          
+
           // 相談内容をログに記録（手動対応用）
           console.log(`[Manual action required] Consultation from user ${userId}, case ${conversationState.case_id}: ${messageText}`);
+          continue;
+        }
+
+        // 会話フロー中だが、期待されるメッセージではない場合
+        if (conversationState && conversationState.step !== 'completed') {
+          console.log(`[Unexpected message] User ${userId} in state ${conversationState.step} sent: "${messageText}"`);
+          // 会話フロー中は、ボタンからの選択を促す
+          await client.replyMessage(event.replyToken, {
+            type: 'text',
+            text: '上のボタンから選択してください。',
+          });
           continue;
         }
 
