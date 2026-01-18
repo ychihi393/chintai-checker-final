@@ -254,7 +254,7 @@ export async function POST(req: Request) {
           try {
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: '友だち追加ありがとうございます！🎉\n\n賃貸初期費用AI診断の結果をこちらで確認できます。\n\n診断ページで「LINEで続きを確認」ボタンを押して連携してください。',
+              text: '友だち追加ありがとうございます！🎉\n\n賃貸初期費用AI診断の結果をこちらのLINEでご確認いただけます。\n\n診断ページで「LINEで続きを確認」ボタンを押して、ぜひ連携してくださいね。',
             });
             console.log(`[Follow event] Welcome message sent to user ${userId}`);
           } catch (error: any) {
@@ -284,11 +284,10 @@ export async function POST(req: Request) {
           if (messageText === 'はい') {
             console.log('[property_confirm] User selected "はい" - moving to application_intent');
             // 「はい」が選択された場合 → 申し込み希望を聞く
-            await setConversationState(userId, 'application_intent', caseId);
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'flex',
-              altText: '申し込みを希望しますか？',
+              altText: 'お申し込みについて',
               contents: {
                 type: 'bubble',
                 body: {
@@ -297,19 +296,19 @@ export async function POST(req: Request) {
                   contents: [
                     {
                       type: 'text',
-                      text: '申し込みについて',
+                      text: 'ありがとうございます',
                       weight: 'bold',
-                      size: 'xl',
+                      size: 'lg',
                       color: '#333333',
                       margin: 'md',
                       align: 'center',
                     },
                     {
                       type: 'text',
-                      text: '申し込みを希望しますか？',
-                      size: 'md',
+                      text: 'こちらの物件へのお申し込みについてお伺いします',
+                      size: 'sm',
                       color: '#666666',
-                      margin: 'sm',
+                      margin: 'md',
                       align: 'center',
                       wrap: true,
                     },
@@ -319,7 +318,7 @@ export async function POST(req: Request) {
                     },
                     {
                       type: 'box',
-                      layout: 'horizontal',
+                      layout: 'vertical',
                       spacing: 'sm',
                       margin: 'lg',
                       contents: [
@@ -330,10 +329,9 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
-                            label: 'する',
+                            label: 'お申し込みする',
                             text: '申し込みする',
                           },
-                          flex: 1,
                         },
                         {
                           type: 'button',
@@ -342,24 +340,22 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
-                            label: 'しない',
-                            text: '申し込みしない',
+                            label: '他の物件を探す',
+                            text: '他の物件を探す',
                           },
-                          flex: 1,
+                        },
+                        {
+                          type: 'button',
+                          style: 'primary',
+                          color: '#FF9500',
+                          height: 'sm',
+                          action: {
+                            type: 'message',
+                            label: '相談したい',
+                            text: '相談したい',
+                          },
                         },
                       ],
-                    },
-                    {
-                      type: 'button',
-                      style: 'primary',
-                      color: '#FF9500',
-                      height: 'sm',
-                      action: {
-                        type: 'message',
-                        label: '相談したい',
-                        text: '相談したい',
-                      },
-                      margin: 'md',
                     },
                   ],
                 },
@@ -370,26 +366,33 @@ export async function POST(req: Request) {
                 },
               },
             });
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'application_intent', caseId);
             continue;
           } else if (messageText === 'いいえ') {
             console.log('[property_confirm] User selected "いいえ" - requesting images');
             // 「いいえ」が選択された場合 → 画像送信を促す
-            await setConversationState(userId, 'waiting_images', caseId);
 
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: 'お手数だけど、確認希望物件の募集図面と初期費用の見積もりをこのLINEで送ってほしい！',
+              text: '承知いたしました。\n\nお手数ですが、ご希望の物件の募集図面と初期費用の見積もりをこちらのLINEにお送りいただけますでしょうか？\n\n担当者が確認の上、診断結果をお送りいたします。',
             });
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'waiting_images', caseId);
             continue;
           } else if (messageText === '相談したい') {
             console.log('[property_confirm] User selected "相談したい"');
             // 「相談したい」が選択された場合
-            await setConversationState(userId, 'consultation', caseId);
 
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: 'わかったよ！まずは相談したい内容をざっくり教えて～',
+              text: '承知いたしました。\n\nどのようなことでもお気軽にご相談ください。まずは、ざっくりとご相談内容を教えていただけますか？\n\n担当者より改めてご連絡させていただきます。',
             });
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'consultation', caseId);
             continue;
           }
         }
@@ -402,19 +405,21 @@ export async function POST(req: Request) {
           if (messageText === '申し込みする') {
             console.log('[application_intent] User selected "申し込みする"');
             // 「申し込みする」が選択された場合 → 以後手動対応
-            await setConversationState(userId, 'completed', caseId);
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: '承知しました。担当者より詳細な初期費用の見積もりと申し込み方法について連絡いたします。',
+              text: 'ありがとうございます。\n\n最新の空室状況と、正確な初期費用のお見積もりを確認させていただきます。少々お待ちくださいませ。\n\n担当者より詳細をご連絡いたします。',
             });
-            // ここで手動対応の通知（例：エージェントへの通知、管理画面への記録など）
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'completed', caseId);
+
+            // ここで手動対応の通知
             console.log(`[Manual action required] User ${userId} wants to apply for case ${caseId}`);
             continue;
-          } else if (messageText === '申し込みしない') {
-            console.log('[application_intent] User selected "申し込みしない"');
-            // 「申し込みしない」が選択された場合 → 物件探すシステムへのリンク
-            await setConversationState(userId, 'completed', caseId);
+          } else if (messageText === '他の物件を探す' || messageText === '申し込みしない') {
+            console.log('[application_intent] User selected "他の物件を探す"');
+            // 「他の物件を探す」が選択された場合 → 物件探すシステムへのリンク
 
             // スーモのURL（テスト用、後で変更可能）
             const propertySearchUrl = 'https://suumo.jp/chintai/';
@@ -424,7 +429,7 @@ export async function POST(req: Request) {
               altText: '他の物件を探す',
               template: {
                 type: 'buttons',
-                text: 'そしたら他の物件探せるAIシステムあるからそっち使ってみて～！',
+                text: '承知いたしました。\n\n他の物件をお探しでしたら、AIで最適な物件を探せるシステムをご用意しております。ぜひこちらもご活用ください。',
                 actions: [
                   {
                     type: 'uri',
@@ -434,16 +439,21 @@ export async function POST(req: Request) {
                 ],
               },
             });
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'completed', caseId);
             continue;
           } else if (messageText === '相談したい') {
             console.log('[application_intent] User selected "相談したい"');
             // 「相談したい」が選択された場合
-            await setConversationState(userId, 'consultation', caseId);
 
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: 'わかったよ！まずは相談したい内容をざっくり教えて～',
+              text: '承知いたしました。\n\nどのようなことでもお気軽にご相談ください。まずは、ざっくりとご相談内容を教えていただけますか？\n\n担当者より改めてご連絡させていただきます。',
             });
+
+            // メッセージ送信後に状態を変更
+            await setConversationState(userId, 'consultation', caseId);
             continue;
           }
         }
@@ -525,12 +535,13 @@ export async function POST(req: Request) {
 
         // 相談状態の場合、メッセージを受け取って以後手動対応
         if (conversationState && conversationState.step === 'consultation') {
-          await setConversationState(userId, 'completed', conversationState.case_id);
-
           await client.replyMessage(event.replyToken, {
             type: 'text',
-            text: '相談内容を承知しました。担当者より返信いたします。',
+            text: 'ご相談内容を承りました。\n\n担当者より改めてご連絡させていただきますので、少々お待ちくださいませ。',
           });
+
+          // メッセージ送信後に状態を変更
+          await setConversationState(userId, 'completed', conversationState.case_id);
 
           // 相談内容をログに記録（手動対応用）
           console.log(`[Manual action required] Consultation from user ${userId}, case ${conversationState.case_id}: ${messageText}`);
@@ -538,14 +549,10 @@ export async function POST(req: Request) {
         }
 
         // 会話フロー中だが、期待されるメッセージではない場合
-        if (conversationState && conversationState.step !== 'completed') {
+        // （誤タップや再タップを許容するため、制限は緩くする）
+        if (conversationState && conversationState.step !== 'completed' && conversationState.step !== 'waiting_images') {
           console.log(`[Unexpected message] User ${userId} in state ${conversationState.step} sent: "${messageText}"`);
-          // 会話フロー中は、ボタンからの選択を促す
-          await client.replyMessage(event.replyToken, {
-            type: 'text',
-            text: '上のボタンから選択してください。',
-          });
-          continue;
+          // システムコマンドや通常メッセージとして処理を続行（制限しない）
         }
 
         // その他のメッセージ → ヘルプ
@@ -565,9 +572,9 @@ export async function POST(req: Request) {
           // 画像受信を確認（通知のみ）
           await client.replyMessage(event.replyToken, {
             type: 'text',
-            text: '画像を確認しました。担当者より診断結果をご連絡いたします。',
+            text: '画像を受け取りました。ありがとうございます。\n\n担当者が確認の上、診断結果をお送りいたしますので、少々お待ちくださいませ。',
           });
-          
+
           // 画像受信をログに記録（手動対応用）
           console.log(`[Manual action required] Image received from user ${userId}, case ${imageConversationState.case_id}`);
           continue;
@@ -576,7 +583,7 @@ export async function POST(req: Request) {
         // 画像が送信されたが、待機状態でない場合
         await client.replyMessage(event.replyToken, {
           type: 'text',
-          text: '画像を受信しました。診断ページから「LINEで続き」ボタンを押して連携してください。',
+          text: '画像を受け取りました。\n\n診断ページから「LINEで続きを確認」ボタンを押して連携していただくと、診断結果をお送りできます。',
         });
       }
     }
