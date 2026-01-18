@@ -330,7 +330,7 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
-                            label: '申し込みする',
+                            label: 'する',
                             text: '申し込みする',
                           },
                           flex: 1,
@@ -342,7 +342,7 @@ export async function POST(req: Request) {
                           height: 'sm',
                           action: {
                             type: 'message',
-                            label: '申し込みしない',
+                            label: 'しない',
                             text: '申し込みしない',
                           },
                           flex: 1,
@@ -372,21 +372,23 @@ export async function POST(req: Request) {
             });
             continue;
           } else if (messageText === 'いいえ') {
+            console.log('[property_confirm] User selected "いいえ" - requesting images');
             // 「いいえ」が選択された場合 → 画像送信を促す
             await setConversationState(userId, 'waiting_images', caseId);
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: 'ごめん、こちらに見積書と図面をLINEのチャットで直接送ってくれない？',
+              text: 'お手数だけど、確認希望物件の募集図面と初期費用の見積もりをこのLINEで送ってほしい！',
             });
             continue;
           } else if (messageText === '相談したい') {
+            console.log('[property_confirm] User selected "相談したい"');
             // 「相談したい」が選択された場合
             await setConversationState(userId, 'consultation', caseId);
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: '了解だよ。じゃあ相談内容をざっくりにメッセージ（LINEのメッセージ）で教えてね。',
+              text: 'わかったよ！まずは相談したい内容をざっくり教えて～',
             });
             continue;
           }
@@ -410,18 +412,19 @@ export async function POST(req: Request) {
             console.log(`[Manual action required] User ${userId} wants to apply for case ${caseId}`);
             continue;
           } else if (messageText === '申し込みしない') {
+            console.log('[application_intent] User selected "申し込みしない"');
             // 「申し込みしない」が選択された場合 → 物件探すシステムへのリンク
             await setConversationState(userId, 'completed', caseId);
-            
-            // スーモのURL（ダミー）
+
+            // スーモのURL（テスト用、後で変更可能）
             const propertySearchUrl = 'https://suumo.jp/chintai/';
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'template',
               altText: '他の物件を探す',
               template: {
                 type: 'buttons',
-                text: 'そうか、じゃあ他の物件を探せるこちらのAIで物件探すシステムがあるからそちらを使ってね！',
+                text: 'そしたら他の物件探せるAIシステムあるからそっち使ってみて～！',
                 actions: [
                   {
                     type: 'uri',
@@ -433,12 +436,13 @@ export async function POST(req: Request) {
             });
             continue;
           } else if (messageText === '相談したい') {
+            console.log('[application_intent] User selected "相談したい"');
             // 「相談したい」が選択された場合
             await setConversationState(userId, 'consultation', caseId);
-            
+
             await client.replyMessage(event.replyToken, {
               type: 'text',
-              text: '了解だよ。じゃあ相談内容をざっくりにメッセージ（LINEのメッセージ）で教えてね。',
+              text: 'わかったよ！まずは相談したい内容をざっくり教えて～',
             });
             continue;
           }
