@@ -485,8 +485,9 @@ export async function POST(req: Request) {
           continue;
         }
 
-        // 「はい」→ アクティブ案件の詳細表示
-        if (messageText === 'はい' || messageText === 'Yes' || messageText === 'yes') {
+        // 「はい」→ アクティブ案件の詳細表示（会話状態がない場合のみ）
+        if ((messageText === 'はい' || messageText === 'Yes' || messageText === 'yes') &&
+            (!conversationState || conversationState.step === 'completed')) {
           const activeCase = await getActiveCase(userId);
 
           if (!activeCase) {
