@@ -64,6 +64,32 @@ export async function POST(req: Request) {
     // 友だち追加状態を確認してからメッセージを送信
     try {
       const client = createLineClient();
+
+      const logLineApiError = (label: string, err: any, extra?: Record<string, unknown>) => {
+        const status =
+          err?.statusCode ??
+          err?.status ??
+          err?.originalError?.response?.status ??
+          err?.response?.status ??
+          null;
+
+        const responseBody =
+          err?.originalError?.response?.data ??
+          err?.response?.data ??
+          err?.originalError?.body ??
+          err?.body ??
+          null;
+
+        console.error(label, {
+          lineUserId,
+          caseId,
+          status,
+          responseBody,
+          message: err?.message,
+          stack: err?.stack,
+          ...extra,
+        });
+      };
       
       // 友だち追加状態を確認（プロフィール取得で確認）
       // 友だち追加されていない場合、getProfileはエラーを返す
@@ -81,7 +107,7 @@ export async function POST(req: Request) {
             errorMessage.includes('友だち追加') || 
             errorMessage.includes('not a friend') ||
             errorMessage.includes('LINEの友達ではない')) {
-          console.warn('User is not a friend:', profileError);
+          logLineApiError('User is not a friend (getProfile failed)', profileError);
           // 連携自体は成功しているので、案件IDは返すが、メッセージ送信はスキップ
           return NextResponse.json({
             success: true,
@@ -92,7 +118,7 @@ export async function POST(req: Request) {
           });
         } else {
           // その他のエラー（ネットワークエラーなど）の場合は、友だち追加済みとみなして続行
-          console.warn('getProfile error (not friend-related), continuing:', profileError);
+          logLineApiError('getProfile error (not friend-related), continuing', profileError);
           isFriend = true; // 続行を試みる
         }
       }
@@ -103,14 +129,27 @@ export async function POST(req: Request) {
       }
 
       const result = caseData.result;
+      const propertyConfirmQuestionText = '先ほど設定した物件名はこちらでお間違いないですか?';
 
       // 裏コマンド（占いモード）の場合
       if (result.is_secret_mode) {
         const message = `✨ ${result.fortune_title || 'スペシャル診断'}\n\n${result.fortune_summary || ''}\n\n「履歴」と送信すると、いつでも結果を確認できます。`;
-        await client.pushMessage(lineUserId, {
-          type: 'text',
-          text: message,
-        });
+        // 物件名が空/未取得でも、分岐開始の質問だけは必ず送る
+        await setConversationState(lineUserId, 'property_confirm', caseId);
+
+        await client.pushMessage(lineUserId, [
+          { type: 'text', text: message },
+          {
+            type: 'text',
+            text: propertyConfirmQuestionText,
+            quickReply: {
+              items: [
+                { type: 'action', action: { type: 'message', label: 'はい', text: 'はい' } },
+                { type: 'action', action: { type: 'message', label: 'いいえ', text: 'いいえ' } },
+              ],
+            },
+          },
+        ]);
       } else {
         // 通常の診断結果
         let message = `✅ 診断結果を引き継ぎました！\n\n`;
@@ -150,96 +189,45 @@ export async function POST(req: Request) {
 
         message += `「履歴」と送信すると、いつでも詳細を確認できます。`;
 
-        await client.pushMessage(lineUserId, {
-          type: 'text',
-          text: message,
-        });
-
-        // 診断結果送信後、すぐに物件確認の質問を送信（通常診断の場合のみ）
-        const propertyName = result.property_name || '物件名不明';
-        const roomNumber = result.room_number || '';
-        const propertyDisplay = roomNumber ? `${propertyName} ${roomNumber}` : propertyName;
-
-        // 会話状態を保存
+        // 会話状態を保存（このあと「はい/いいえ」分岐を開始する）
         await setConversationState(lineUserId, 'property_confirm', caseId);
 
-        // Flex Messageで物件確認の質問を送信（おしゃれなデザイン）
-        await client.pushMessage(lineUserId, {
-          type: 'flex',
-          altText: '確認する物件はこの物件で合ってますか？',
-          contents: {
-            type: 'bubble',
-            body: {
-              type: 'box',
-              layout: 'vertical',
-              contents: [
-                {
-                  type: 'text',
-                  text: '物件の確認',
-                  weight: 'bold',
-                  size: 'xl',
-                  color: '#333333',
-                  margin: 'md',
-                  align: 'center',
-                },
-                {
-                  type: 'text',
-                  text: propertyDisplay,
-                  size: 'lg',
-                  color: '#666666',
-                  margin: 'sm',
-                  align: 'center',
-                  wrap: true,
-                },
-                {
-                  type: 'separator',
-                  margin: 'lg',
-                },
-                {
-                  type: 'box',
-                  layout: 'horizontal',
-                  spacing: 'sm',
-                  margin: 'lg',
-                  contents: [
-                    {
-                      type: 'button',
-                      style: 'primary',
-                      color: '#007AFF',
-                      height: 'sm',
-                      action: {
-                        type: 'message',
-                        label: 'はい',
-                        text: 'はい',
-                      },
-                      flex: 1,
-                    },
-                    {
-                      type: 'button',
-                      style: 'secondary',
-                      color: '#808080',
-                      height: 'sm',
-                      action: {
-                        type: 'message',
-                        label: 'いいえ',
-                        text: 'いいえ',
-                      },
-                      flex: 1,
-                    },
-                  ],
-                },
+        // 登録直後は replyToken が無いので pushMessage に統一し、
+        // 「診断結果 + 質問」を messages 配列で1回のAPI呼び出しで必ずセット送信する
+        await client.pushMessage(lineUserId, [
+          { type: 'text', text: message },
+          {
+            type: 'text',
+            text: propertyConfirmQuestionText,
+            quickReply: {
+              items: [
+                { type: 'action', action: { type: 'message', label: 'はい', text: 'はい' } },
+                { type: 'action', action: { type: 'message', label: 'いいえ', text: 'いいえ' } },
               ],
             },
-            styles: {
-              body: {
-                backgroundColor: '#FFFFFF',
-              },
-            },
           },
-        });
+        ]);
       }
     } catch (messageError: any) {
       // メッセージ送信が失敗した場合
-      console.error('Failed to send LINE message:', messageError);
+      console.error('Failed to send LINE message', {
+        lineUserId,
+        caseId,
+        status:
+          messageError?.statusCode ??
+          messageError?.status ??
+          messageError?.originalError?.response?.status ??
+          messageError?.response?.status ??
+          null,
+        responseBody:
+          messageError?.originalError?.response?.data ??
+          messageError?.response?.data ??
+          messageError?.originalError?.body ??
+          messageError?.body ??
+          null,
+        message: messageError?.message,
+        stack: messageError?.stack,
+      });
       
       // 友だち追加が必要なエラーの場合（LINE APIのエラーコード確認）
       const errorMessage = messageError.message || '';
