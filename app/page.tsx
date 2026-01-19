@@ -1653,24 +1653,32 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3">
                 {/* カメラで撮影ボタン */}
                 <button
-                  onClick={() => openCamera("plan")}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.02]"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openCamera("plan");
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-lg transition-all hover:scale-[1.02]"
                 >
-                  <span className="text-3xl">📷</span>
-                  <span className="text-sm">カメラで撮影</span>
+                  <span className="text-2xl">📷</span>
+                  <span className="text-xs">カメラで撮影</span>
                 </button>
 
                 {/* ファイルから選択ボタン */}
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     if (resultPlanInputRef.current) {
                       resultPlanInputRef.current.click();
                     }
                   }}
-                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-4 px-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.02]"
+                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-xl flex flex-col items-center justify-center gap-1.5 shadow-lg transition-all hover:scale-[1.02]"
                 >
-                  <span className="text-3xl">📁</span>
-                  <span className="text-sm">ファイル選択</span>
+                  <span className="text-2xl">📁</span>
+                  <span className="text-xs">ファイル選択</span>
                 </button>
               </div>
             </div>
