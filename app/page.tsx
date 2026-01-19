@@ -658,6 +658,9 @@ export default function Home() {
   const planInputRef = useRef<HTMLInputElement>(null);
   const conditionInputRef = useRef<HTMLInputElement>(null);
 
+  // 結果画面用の図面入力参照
+  const resultPlanInputRef = useRef<HTMLInputElement>(null);
+
   // 図面追加時の自動再診断フラグ
   const shouldAutoReanalyzeRef = useRef(false);
 
@@ -1637,18 +1640,39 @@ export default function Home() {
                   募集図面を追加すると、要確認項目の判定精度が大幅に向上します。
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  // 図面アップロード用のinputをクリック
-                  if (planInputRef.current) {
-                    planInputRef.current.click();
-                  }
-                }}
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 shadow-lg transition-all hover:scale-[1.02]"
-              >
-                <span className="text-2xl">📄</span>
-                <span>募集図面を追加して再診断</span>
-              </button>
+
+              {/* 結果画面用の図面アップロードinput（hidden） */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={resultPlanInputRef}
+                className="hidden"
+                onChange={(e) => handleInputChange(e, "plan")}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* カメラで撮影ボタン */}
+                <button
+                  onClick={() => openCamera("plan")}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.02]"
+                >
+                  <span className="text-3xl">📷</span>
+                  <span className="text-sm">カメラで撮影</span>
+                </button>
+
+                {/* ファイルから選択ボタン */}
+                <button
+                  onClick={() => {
+                    if (resultPlanInputRef.current) {
+                      resultPlanInputRef.current.click();
+                    }
+                  }}
+                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold py-4 px-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.02]"
+                >
+                  <span className="text-3xl">📁</span>
+                  <span className="text-sm">ファイル選択</span>
+                </button>
+              </div>
             </div>
           )}
 
