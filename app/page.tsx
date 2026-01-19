@@ -1404,18 +1404,29 @@ export default function Home() {
       )}
 
       {/* ================= RESULT VIEW ================= */}
-      {currentView === "result" && result && (
+      {currentView === "result" && (result || isLoading) && (
         <div className="max-w-3xl mx-auto p-6 md:p-10 animate-fade-in-up">
-          
-          {/* 裏コマンドモード: 占い風UI */}
-          {result.is_secret_mode ? (
+
+          {/* 再診断中のローディング表示 */}
+          {isLoading && !result && (
+            <div className="flex flex-col items-center justify-center min-h-[50vh]">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+              <p className="text-slate-300 text-sm">図面を追加して再診断中...</p>
+            </div>
+          )}
+
+          {/* 結果表示（resultが存在する場合のみ） */}
+          {result && (
             <>
-              <div id="result-export" ref={resultRef} style={{ backgroundColor: "#ffffff" }} className="rounded-3xl overflow-hidden">
-                <FortuneResult result={result} />
-              </div>
-              
-              {/* 共有・LINE連携ボタン */}
-              <div className="mb-8 mt-8">
+            {/* 裏コマンドモード: 占い風UI */}
+            {result.is_secret_mode ? (
+              <>
+                <div id="result-export" ref={resultRef} style={{ backgroundColor: "#ffffff" }} className="rounded-3xl overflow-hidden">
+                  <FortuneResult result={result} />
+                </div>
+
+                {/* 共有・LINE連携ボタン */}
+                <div className="mb-8 mt-8">
                 <div className="flex gap-2 md:gap-4 mb-4">
                   <button onClick={handleDownloadImage} className="flex-1 py-3 rounded-xl font-bold bg-slate-700 text-white text-sm hover:bg-slate-600 flex items-center justify-center gap-2 shadow-md">
                     <span>💾</span> 画像DL
@@ -1878,6 +1889,8 @@ export default function Home() {
           <button onClick={handleReset} className="block w-full text-center text-slate-500 text-sm hover:text-blue-400 font-bold py-4 transition-colors">
             🔄 別の物件を診断する
           </button>
+          </>
+          )}
           </>
           )}
 
