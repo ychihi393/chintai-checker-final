@@ -496,12 +496,12 @@ export default function SharePage() {
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-6 mb-8 text-center shadow-lg relative overflow-hidden">
             <p className="text-blue-100 text-sm font-bold mb-2">削減可能額</p>
             <div className="text-4xl md:text-5xl font-black mb-3 tracking-tight">
-              -{formatYen(result.discount_amount)}<span className="text-lg font-medium">円</span>
+              -{formatYen(result.discount_amount ?? 0)}<span className="text-lg font-medium">円</span>
             </div>
             <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full text-sm backdrop-blur-sm">
-              <span className="opacity-80">提示: ¥{formatYen(result.total_original)}</span>
+              <span className="opacity-80">提示: ¥{formatYen(result.total_original ?? 0)}</span>
               <span>→</span>
-              <span className="font-bold">適正: ¥{formatYen(result.total_fair)}</span>
+              <span className="font-bold">適正: ¥{formatYen(result.total_fair ?? 0)}</span>
             </div>
           </div>
 
@@ -518,8 +518,8 @@ export default function SharePage() {
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-slate-500">{item.reason}</p>
                   <div className="text-right whitespace-nowrap ml-2">
-                    <span className="text-xs text-slate-400 line-through block">¥{formatYen(item.price_original)}</span>
-                    <span className="text-red-600 font-bold">¥{formatYen(item.price_fair)}</span>
+                    <span className="text-xs text-slate-400 line-through block">¥{formatYen(item.price_original ?? 0)}</span>
+                    <span className="text-red-600 font-bold">¥{formatYen(item.price_fair ?? 0)}</span>
                   </div>
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function SharePage() {
                 {result.items.filter(i => i.status === 'fair').map((item, idx) => (
                   <div key={idx} className="flex justify-between border-b border-slate-100 pb-1">
                     <span>{item.name}</span>
-                    <span>¥{formatYen(item.price_fair)}</span>
+                    <span>¥{formatYen(item.price_fair ?? 0)}</span>
                   </div>
                 ))}
               </div>
