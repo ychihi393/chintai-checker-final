@@ -538,74 +538,74 @@ export default function SharePage() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* AI Review */}
-        <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-blue-500 text-slate-700 text-sm leading-relaxed mb-8">
-          <h3 className="font-bold text-blue-700 mb-3 flex items-center gap-2">🤖 AIエージェントの総評</h3>
-          {(() => {
-            let content = result.pro_review.content.trim();
-            content = content.replace(/この物件の初期費用について[^\n]*\n?/g, '');
-            content = content.replace(/以下の点を必ず含めて詳細に分析してください[^\n]*\n?/g, '');
-            content = content.replace(/総評は[^\n]*\n?/g, '');
-            content = content.replace(/説明文や指示文は一切含めないでください[^\n]*\n?/g, '');
-            
-            const lines = content.split('\n').filter(line => {
-              const trimmed = line.trim();
-              return trimmed && 
-                     !trimmed.match(/^【出力JSON形式】|^Markdown|^savings_magic/) &&
-                     !trimmed.match(/この物件の初期費用について/) &&
-                     !trimmed.match(/以下の点を必ず含めて/) &&
-                     !trimmed.match(/総評は[^\n]*フォーマット/);
-            });
-            
-            if (lines.length === 0) {
-              return <p className="text-slate-600">総評を読み込み中...</p>;
-            }
-            
-            let summaryIndex = -1;
-            let summary = '';
-            
-            for (let i = 0; i < lines.length; i++) {
-              if (lines[i].trim().match(/^【総括】/)) {
-                if (i + 1 < lines.length) {
-                  summaryIndex = i;
-                  summary = lines[i + 1].trim();
-                  break;
+          {/* AI Review */}
+          <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-blue-500 text-slate-700 text-sm leading-relaxed mb-8">
+            <h3 className="font-bold text-blue-700 mb-3 flex items-center gap-2">🤖 AIエージェントの総評</h3>
+            {(() => {
+              let content = result.pro_review.content.trim();
+              content = content.replace(/この物件の初期費用について[^\n]*\n?/g, '');
+              content = content.replace(/以下の点を必ず含めて詳細に分析してください[^\n]*\n?/g, '');
+              content = content.replace(/総評は[^\n]*\n?/g, '');
+              content = content.replace(/説明文や指示文は一切含めないでください[^\n]*\n?/g, '');
+              
+              const lines = content.split('\n').filter(line => {
+                const trimmed = line.trim();
+                return trimmed && 
+                       !trimmed.match(/^【出力JSON形式】|^Markdown|^savings_magic/) &&
+                       !trimmed.match(/この物件の初期費用について/) &&
+                       !trimmed.match(/以下の点を必ず含めて/) &&
+                       !trimmed.match(/総評は[^\n]*フォーマット/);
+              });
+              
+              if (lines.length === 0) {
+                return <p className="text-slate-600">総評を読み込み中...</p>;
+              }
+              
+              let summaryIndex = -1;
+              let summary = '';
+              
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].trim().match(/^【総括】/)) {
+                  if (i + 1 < lines.length) {
+                    summaryIndex = i;
+                    summary = lines[i + 1].trim();
+                    break;
+                  }
                 }
               }
-            }
-            
-            if (summaryIndex === -1 && lines.length > 0) {
-              summary = lines[0].trim().replace(/^【総括】\s*/, '').replace(/^総括[：:]\s*/, '');
-              summaryIndex = -1;
-            }
-            
-            const restLines = summaryIndex >= 0 
-              ? lines.slice(summaryIndex + 2)
-              : lines.slice(1);
-            
-            return (
-              <>
-                {summary && (
-                  <p className="font-black text-blue-700 text-base mb-3">{summary}</p>
-                )}
-                {restLines.map((line, i) => {
-                  const trimmed = line.trim();
-                  if (trimmed.match(/^【.*】$/)) {
-                    return null;
-                  }
-                  if (trimmed.startsWith('・') || trimmed.startsWith('-') || trimmed.match(/^\d+\./)) {
-                    return <p key={i} className="mb-1.5 ml-2">{trimmed}</p>;
-                  }
-                  if (!trimmed) {
-                    return null;
-                  }
-                  return <p key={i} className="mb-2">{trimmed}</p>;
-                }).filter(Boolean)}
-              </>
-            );
-          })()}
+              
+              if (summaryIndex === -1 && lines.length > 0) {
+                summary = lines[0].trim().replace(/^【総括】\s*/, '').replace(/^総括[：:]\s*/, '');
+                summaryIndex = -1;
+              }
+              
+              const restLines = summaryIndex >= 0 
+                ? lines.slice(summaryIndex + 2)
+                : lines.slice(1);
+              
+              return (
+                <>
+                  {summary && (
+                    <p className="font-black text-blue-700 text-base mb-3">{summary}</p>
+                  )}
+                  {restLines.map((line, i) => {
+                    const trimmed = line.trim();
+                    if (trimmed.match(/^【.*】$/)) {
+                      return null;
+                    }
+                    if (trimmed.startsWith('・') || trimmed.startsWith('-') || trimmed.match(/^\d+\./)) {
+                      return <p key={i} className="mb-1.5 ml-2">{trimmed}</p>;
+                    }
+                    if (!trimmed) {
+                      return null;
+                    }
+                    return <p key={i} className="mb-2">{trimmed}</p>;
+                  }).filter(Boolean)}
+                </>
+              );
+            })()}
+          </div>
         </div>
         )}
 
