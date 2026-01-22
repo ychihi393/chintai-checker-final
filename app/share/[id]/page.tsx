@@ -543,6 +543,10 @@ export default function SharePage() {
           <div className="bg-blue-50 rounded-xl p-5 border-l-4 border-blue-500 text-slate-700 text-sm leading-relaxed mb-8">
             <h3 className="font-bold text-blue-700 mb-3 flex items-center gap-2">🤖 AIエージェントの総評</h3>
             {(() => {
+              if (!result.pro_review?.content) {
+                return <p className="text-slate-600">総評を読み込み中...</p>;
+              }
+              
               let content = result.pro_review.content.trim();
               content = content.replace(/この物件の初期費用について[^\n]*\n?/g, '');
               content = content.replace(/以下の点を必ず含めて詳細に分析してください[^\n]*\n?/g, '');
