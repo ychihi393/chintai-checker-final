@@ -507,7 +507,7 @@ export default function SharePage() {
 
           {/* Items List */}
           <div className="space-y-3 mb-4">
-            {result.items.filter(i => i.status !== 'fair').map((item, index) => (
+            {(result.items ?? []).filter(i => i.status !== 'fair').map((item, index) => (
               <div key={index} className="bg-red-50 border border-red-100 rounded-xl p-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-bold text-slate-800">{item.name}</span>
@@ -525,11 +525,11 @@ export default function SharePage() {
               </div>
             ))}
           </div>
-          {result.items.filter(i => i.status === 'fair').length > 0 && (
+          {(result.items ?? []).filter(i => i.status === 'fair').length > 0 && (
             <div className="mt-6 pt-4 border-t border-slate-100">
               <p className="text-xs font-bold text-emerald-600 mb-2">✅ 適正な項目</p>
               <div className="text-xs text-slate-500 grid grid-cols-2 gap-2">
-                {result.items.filter(i => i.status === 'fair').map((item, idx) => (
+                {(result.items ?? []).filter(i => i.status === 'fair').map((item, idx) => (
                   <div key={idx} className="flex justify-between border-b border-slate-100 pb-1">
                     <span>{item.name}</span>
                     <span>¥{formatYen(item.price_fair ?? 0)}</span>
